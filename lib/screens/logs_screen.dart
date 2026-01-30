@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/app_colors.dart';
 import '../services/db_service.dart';
+import '../core/app_colors.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -20,44 +20,19 @@ class _LogsScreenState extends State<LogsScreen> {
   }
 
   Future<void> _loadLogs() async {
-    setState(() => _isLoading = true);
-    try {
-      final logs = await DBService().getLogs();
-      if (mounted) {
-        setState(() {
-          _logs = logs;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+    final logs = await DBService().getLogs();
+    if (mounted) {
+      setState(() {
+        _logs = logs;
+        _isLoading = false;
+      });
     }
   }
 
-  // ФУНКЦИЯ ОЧИСТКИ
-  Future<void> _clearHistory() async {
-    final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-              backgroundColor: AppColors.bg,
-              title: Text("Очистити історію?",
-                  style: TextStyle(color: AppColors.textMain)),
-              content: Text("Це видалить всі записи з телефону.",
-                  style: TextStyle(color: Colors.grey)),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text("Ні")),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text("Так", style: TextStyle(color: Colors.red))),
-              ],
-            ));
-
-    if (confirm == true) {
-      await DBService().clearLogs();
-      _loadLogs();
-    }
+  Future<void> _clearLogs() async {
+    setState(() => _isLoading = true);
+    await DBService().clearLogs();
+    await _loadLogs();
   }
 
   @override
@@ -65,21 +40,16 @@ class _LogsScreenState extends State<LogsScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: Text("Історія (Офлайн)",
+        title: Text("Історія змін",
             style: TextStyle(
                 color: AppColors.textMain, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.bg,
-        iconTheme: IconThemeData(color: AppColors.textMain),
         elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.textMain),
         actions: [
-          // КНОПКА ОЧИСТКИ
           IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: _clearHistory,
-          ),
-          IconButton(
-            icon: Icon(Icons.refresh, color: AppColors.accentBlue),
-            onPressed: _loadLogs,
+            icon: const Icon(Icons.delete_sweep, color: Colors.red),
+            onPressed: () => _showClearDialog(),
           )
         ],
       ),
@@ -88,96 +58,144 @@ class _LogsScreenState extends State<LogsScreen> {
           : _logs.isEmpty
               ? Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history_toggle_off,
-                          size: 80, color: Colors.grey.withOpacity(0.2)),
-                      SizedBox(height: 10),
-                      Text("Історія порожня",
-                          style: TextStyle(color: Colors.grey)),
-                    ],
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history,
+                        size: 60, color: Colors.grey.withOpacity(0.3)),
+                    const SizedBox(height: 10),
+                    Text("Історія порожня",
+                        style: TextStyle(color: Colors.grey)),
+                  ],
+                ))
+              : RefreshIndicator(
+                  onRefresh: _loadLogs,
+                  color: AppColors.accent,
+                  backgroundColor: AppColors.bg,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    itemCount: _logs.length,
+                    itemBuilder: (ctx, i) => _buildLogCard(_logs[i]),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _logs.length,
-                  itemBuilder: (ctx, i) {
-                    final log = _logs[i];
-                    return _buildLogCard(log);
-                  },
                 ),
     );
   }
 
   Widget _buildLogCard(Map<String, dynamic> log) {
-    IconData icon = Icons.info_outline;
-    Color color = Colors.grey;
-    String type = log['type']?.toString() ?? 'info';
+    // 1. Получаем устройство из базы
+    String device = log['device'] ?? "Unknown";
+    String details = log['details'] ?? "";
 
-    switch (type) {
-      case 'add':
-        icon = Icons.add_circle_outline;
-        color = Colors.green;
-        break;
-      case 'edit':
-        icon = Icons.edit_outlined;
-        color = AppColors.accentBlue;
-        break;
-      case 'error':
-        icon = Icons.error_outline;
-        color = Colors.redAccent;
-        break;
+    // 2. Иконка устройства
+    IconData deviceIcon = Icons.help_outline;
+    if (device == "PC")
+      deviceIcon = Icons.computer;
+    else if (device == "Phone") deviceIcon = Icons.smartphone;
+
+    // 3. Цвета
+    String type = log['action_type'] ?? "";
+    Color color = AppColors.accentBlue;
+    IconData actionIcon = Icons.info;
+
+    if (type.contains("Додано") || type.contains("Створено")) {
+      color = Colors.green;
+      actionIcon = Icons.add_circle;
+    } else if (type.contains("Видалення")) {
+      color = Colors.red;
+      actionIcon = Icons.delete;
+    } else if (type.contains("Зміна")) {
+      color = Colors.orange;
+      actionIcon = Icons.edit;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadowTop,
-              offset: Offset(-2, -2),
-              blurRadius: 4),
-          BoxShadow(
-              color: AppColors.shadowBottom,
-              offset: Offset(2, 2),
-              blurRadius: 4),
-        ],
-        border: Border.all(color: color.withOpacity(0.1)),
-      ),
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.shadowTop,
+                offset: const Offset(-2, -2),
+                blurRadius: 5),
+            BoxShadow(
+                color: AppColors.shadowBottom,
+                offset: const Offset(3, 3),
+                blurRadius: 5),
+          ],
+          border: Border.all(color: color.withOpacity(0.1))),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(10),
+            width: 45,
+            height: 45,
             decoration: BoxDecoration(
                 color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(actionIcon, color: color, size: 22),
           ),
-          SizedBox(width: 15),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(log['action']?.toString() ?? "",
+                    Expanded(
+                        child: Text(log['item_name'] ?? "???",
+                            style: TextStyle(
+                                color: AppColors.textMain,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                            overflow: TextOverflow.ellipsis)),
+                    Icon(deviceIcon, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(device,
                         style: TextStyle(
-                            color: AppColors.textMain,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16)),
-                    Text(log['time']?.toString() ?? "",
-                        style: TextStyle(color: Colors.grey, fontSize: 12)),
+                            fontSize: 10,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
-                SizedBox(height: 4),
-                Text(log['details']?.toString() ?? "",
-                    style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                const SizedBox(height: 4),
+                Text(details,
+                    style: TextStyle(
+                        color: AppColors.textMain.withOpacity(0.8),
+                        fontSize: 14)),
+                const SizedBox(height: 6),
+                Text(log['timestamp'] ?? "",
+                    style: TextStyle(
+                        color: Colors.grey.withOpacity(0.6), fontSize: 11)),
               ],
             ),
-          )
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Очищення", style: TextStyle(color: AppColors.textMain)),
+        content: Text("Видалити всю історію (на телефоні та в хмарі)?",
+            style: TextStyle(color: AppColors.textMain)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Ні", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, shape: const StadiumBorder()),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _clearLogs();
+              },
+              child: const Text("Видалити все",
+                  style: TextStyle(color: Colors.white))),
         ],
       ),
     );

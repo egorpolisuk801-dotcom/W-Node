@@ -33,6 +33,11 @@ class UserConfig {
   bool get itemShowHatsR => _prefs.getBool('show_hats_r') ?? true;
   bool get itemShowGloves => _prefs.getBool('show_gloves') ?? true;
 
+  // 🔥 НОВЫЕ СЕТКИ
+  bool get itemShowHatsW => _prefs.getBool('show_hats_w') ?? true; // Широкие
+  bool get itemShowGlovesSL => _prefs.getBool('show_gloves_sl') ?? true; // S-XL
+  bool get itemShowLinen => _prefs.getBool('show_linen') ?? true; // Белье
+
   // === ВИДИМОСТЬ КАТЕГОРИЙ (ИНВЕНТАРЬ) ===
   bool get invShowDigits => _prefs.getBool('inv_digits') ?? true;
   bool get invShowLetters => _prefs.getBool('inv_letters') ?? true;
@@ -44,8 +49,7 @@ class UserConfig {
       _prefs.setString(key, value);
   Future<void> setBool(String key, bool value) => _prefs.setBool(key, value);
 
-  // === ГЛАВНОЕ СОХРАНЕНИЕ (ИСПРАВЛЕНО) ===
-  // Теперь принимает ВСЕ параметры, которые отправляет SettingsScreen
+  // === ГЛАВНОЕ СОХРАНЕНИЕ ===
   Future<void> save({
     required String host,
     required String user,
@@ -55,13 +59,20 @@ class UserConfig {
     required String w2,
     required bool darkMode,
 
-    // Настройки видимости (с дефолтными значениями, чтобы не ломать старый код)
+    // Вещи (Старые)
     bool iDig = true,
     bool iLet = true,
     bool iShoe = true,
     bool iHat = true,
     bool iHatR = true,
     bool iGlov = true,
+
+    // 🔥 Вещи (Новые)
+    bool iHatW = true,
+    bool iGlovSL = true,
+    bool iLinen = true,
+
+    // Инвентарь
     bool invLet = true,
     bool invDig = true,
     bool invShoe = true,
@@ -85,6 +96,11 @@ class UserConfig {
     await _prefs.setBool('show_hats', iHat);
     await _prefs.setBool('show_hats_r', iHatR);
     await _prefs.setBool('show_gloves', iGlov);
+
+    // 🔥 Сохраняем новые
+    await _prefs.setBool('show_hats_w', iHatW);
+    await _prefs.setBool('show_gloves_sl', iGlovSL);
+    await _prefs.setBool('show_linen', iLinen);
 
     // 4. Видимость (Инвентарь)
     await _prefs.setBool('inv_letters', invLet);

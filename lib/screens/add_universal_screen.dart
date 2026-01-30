@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math';
+import 'dart:convert';
 import '../core/app_colors.dart';
 import '../services/db_service.dart';
 import '../core/user_config.dart';
-import '../core/notification_helper.dart'; // Если есть файл уведомлений
+import '../core/notification_helper.dart';
 
 class AddUniversalScreen extends StatefulWidget {
   const AddUniversalScreen({super.key});
@@ -15,10 +17,9 @@ class AddUniversalScreen extends StatefulWidget {
 class _AddUniversalScreenState extends State<AddUniversalScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  final _catCtrl = TextEditingController();
   final _simpleQtyCtrl = TextEditingController();
 
-  // === ДАННЫЕ ДЛЯ МАТРИЦ (РОСТ + РАЗМЕР) ===
+  // --- ДАННЫЕ СЕТОК ---
   final List<String> _digitsRows = ["1", "2", "3", "4", "5", "6", "7", "8"];
   final List<String> _digitsCols = [
     "40",
@@ -51,8 +52,8 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "4XL"
   ];
 
-  // === ДАННЫЕ ДЛЯ ЛИНЕЙНЫХ СПИСКОВ ===
   final List<String> _shoesCols = List.generate(18, (i) => "${35 + i}");
+
   final List<String> _hatsCols = [
     "54",
     "55",
@@ -66,44 +67,45 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "63"
   ];
   final List<String> _hatsRangeCols = [
-    "53-54",
     "54-55",
-    "55-56",
     "56-57",
-    "57-58",
     "58-59",
-    "59-60",
     "60-61",
-    "61-62"
+    "62-63"
   ];
-  final List<String> _glovesCols = ["1", "2", "3", "4"];
+  final List<String> _hatsWideCols = ["54-56", "58-60", "62-64"];
 
-  // === ТИПЫ ===
+  final List<String> _glovesCols = ["1", "2", "3", "4"];
+  final List<String> _glovesSLCols = ["S", "M", "L", "XL"];
+
+  final List<String> _linenCols = List.generate(15, (i) => "${42 + (i * 2)}");
+
+  // --- СПИСОК ТИПОВ ---
   final List<String> _clothesTypes = [
     "Цифри",
     "Букви",
     "Взуття",
     "Головні убори",
     "ГУ (Діапазон)",
+    "ГУ (Широкі)",
     "Рукавички",
+    "Рукавички (S-XL)",
+    "Білизна",
     "Просте"
   ];
+
   final List<String> _invTypes = ["Букви", "Цифри", "Взуття", "ГУ (Діапазон)"];
 
-  // === СОСТОЯНИЕ ===
   bool _isInventory = false;
   String _selectedWh = "ООС";
+  String _currentSubType = "Цифри";
+  String _selectedRow = "1";
+  String _selectedCategory = "I";
 
-  // Общие переменные для сеток
-  String _currentSubType = "Цифри"; // Текущий тип сетки (Цифры/Буквы/...)
-  String _selectedRow = "1"; // Выбранный РОСТ (для матриц)
-
-  // Специфика Инвентаря
-  String _invSelectedCat = "I";
   bool _invUseGrid = true;
-
   Map<String, int> _quantities = {};
   bool _isSaving = false;
+  int _lastTapTime = 0;
 
   @override
   void initState() {
@@ -111,75 +113,59 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     if (UserConfig().wh1Name.isNotEmpty) _selectedWh = UserConfig().wh1Name;
   }
 
-  // --- ПРОВЕРКА НАСТРОЕК ---
+  // 🔥 ОБНОВЛЕННАЯ ПРОВЕРКА ВИДИМОСТИ
   bool _shouldShowType(String type) {
     final cfg = UserConfig();
-    // Логика отображения вкладок (Инвентарь или Вещи)
-    if (_isInventory) {
-      switch (type) {
-        case "Цифри":
-          return cfg.invShowDigits;
-        case "Букви":
-          return cfg.invShowLetters;
-        case "Взуття":
-          return cfg.invShowShoes;
-        case "ГУ (Діапазон)":
-          return cfg.invShowRanges;
-        default:
-          return true;
-      }
-    } else {
-      switch (type) {
-        case "Цифри":
-          return cfg.itemShowDigits;
-        case "Букви":
-          return cfg.itemShowLetters;
-        case "Взуття":
-          return cfg.itemShowShoes;
-        case "Головні убори":
-          return cfg.itemShowHats;
-        case "ГУ (Діапазон)":
-          return cfg.itemShowHatsR;
-        case "Рукавички":
-          return cfg.itemShowGloves;
-        case "Просте":
-          return true;
-        default:
-          return true;
-      }
+    if (_isInventory) return true;
+    switch (type) {
+      case "Цифри":
+        return cfg.itemShowDigits;
+      case "Букви":
+        return cfg.itemShowLetters;
+      case "Взуття":
+        return cfg.itemShowShoes;
+      case "Головні убори":
+        return cfg.itemShowHats;
+      case "ГУ (Діапазон)":
+        return cfg.itemShowHatsR;
+      // 🔥 Новые
+      case "ГУ (Широкі)":
+        return cfg.itemShowHatsW;
+      case "Рукавички":
+        return cfg.itemShowGloves;
+      case "Рукавички (S-XL)":
+        return cfg.itemShowGlovesSL;
+      case "Білизна":
+        return cfg.itemShowLinen;
+      default:
+        return true;
     }
   }
 
-  // Смена режима (Вещи <-> Инвентарь)
   void _setMode(bool inventory) {
     setState(() {
       _isInventory = inventory;
       _quantities.clear();
       _simpleQtyCtrl.clear();
-      // Сброс к дефолтам
       _currentSubType = "Цифри";
       _selectedRow = "1";
     });
   }
 
-  // Смена типа сетки (Вкладки)
   void _setSubType(String type) {
     setState(() {
       _currentSubType = type;
       _quantities.clear();
-
-      // Умный выбор дефолтного роста
       if (type == "Цифри")
         _selectedRow = "1";
       else if (type == "Букви")
         _selectedRow = "XS";
       else
-        _selectedRow = ""; // Для обуви и прочего рост не нужен
+        _selectedRow = "";
     });
   }
 
   int get _totalCount {
-    // Если режим "Простое число" (в вещах или инвентаре)
     if ((_isInventory && !_invUseGrid) ||
         (!_isInventory && _currentSubType == "Просте")) {
       return int.tryParse(_simpleQtyCtrl.text) ?? 0;
@@ -196,13 +182,15 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text("$key : Кількість",
             style: TextStyle(color: AppColors.textMain)),
         content: _neuTextField(qtyCtrl, "0", isNum: true),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Відміна")),
+              child:
+                  const Text("Відміна", style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
             onPressed: () {
@@ -218,53 +206,57 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   }
 
   void _save() async {
-    if (_nameCtrl.text.isEmpty) return;
-    setState(() => _isSaving = true);
+    int now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastTapTime < 2000) return;
+    _lastTapTime = now;
+    if (_isSaving) return;
 
-    int total = _totalCount;
-    Map<String, int> finalData = {};
-
-    bool isSimple = (_isInventory && !_invUseGrid) ||
-        (!_isInventory && _currentSubType == "Просте");
-
-    if (!isSimple) {
-      _quantities.forEach((k, v) {
-        if (v > 0) finalData[k] = v;
-      });
+    if (_nameCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Введіть назву!")));
+      return;
     }
 
-    Map<String, dynamic> item = {
-      'name': _nameCtrl.text,
-      'location': _locationCtrl.text,
-      'category': _isInventory
-          ? _invSelectedCat
-          : (_catCtrl.text.isEmpty ? "Одяг" : _catCtrl.text),
-      'warehouse': _selectedWh,
-      'type': _isInventory ? "Інвентар" : _currentSubType,
-      'total': total,
-      'size_data': finalData,
-      'is_inventory': _isInventory,
-    };
+    setState(() => _isSaving = true);
 
     try {
-      await DBService().saveItem(item);
-      DBService().syncWithCloud();
-      try {
-        NotificationHelper.showSuccess(context, "Створено: ${item['name']}");
-      } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Збережено!")));
+      int total = _totalCount;
+      Map<String, int> finalData = {};
+      bool isSimple = (_isInventory && !_invUseGrid) ||
+          (!_isInventory && _currentSubType == "Просте");
+
+      if (!isSimple) {
+        _quantities.forEach((k, v) {
+          if (v > 0) finalData[k] = v;
+        });
       }
-      if (mounted) Navigator.pop(context, true);
+
+      String uid =
+          "${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(9999)}";
+      Map<String, dynamic> item = {
+        'uid': uid,
+        'name': _nameCtrl.text,
+        'location': _locationCtrl.text,
+        'category': _selectedCategory,
+        'warehouse': _selectedWh,
+        'type': _isInventory ? "Інвентар" : _currentSubType,
+        'total': total,
+        'size_data': finalData,
+        'is_inventory': _isInventory ? 1 : 0,
+      };
+
+      await DBService().saveItem(item);
+
+      if (mounted) {
+        Navigator.pop(context, true);
+        NotificationHelper.showSuccess(context, "Створено: ${item['name']}");
+      }
     } catch (e) {
-      try {
-        NotificationHelper.showError(context, "Помилка: $e");
-      } catch (ex) {
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Помилка: $e")));
+        setState(() => _isSaving = false);
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -281,10 +273,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(15),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА
             Container(
               padding: const EdgeInsets.all(4),
               decoration: _neuDeco(pressed: true),
@@ -298,305 +290,345 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
               ]),
             ),
             const SizedBox(height: 20),
-
-            // 2. ОБЩИЕ ПОЛЯ
-            _neuTextField(_nameCtrl, "Назва (напр. Куртка)"),
-            const SizedBox(height: 15),
+            _sectionHeader("Інформація"),
+            _neuTextField(_nameCtrl, "Назва"),
+            const SizedBox(height: 10),
+            _neuTextField(_locationCtrl, "Місце"),
+            const SizedBox(height: 10),
+            _whSelector(),
+            const SizedBox(height: 20),
             Row(children: [
-              Expanded(flex: 2, child: _neuTextField(_locationCtrl, "Місце")),
-              const SizedBox(width: 15),
-              Expanded(flex: 3, child: _whSelector()),
+              Expanded(
+                flex: 3,
+                child: Container(
+                  height: 60,
+                  padding: const EdgeInsets.all(4),
+                  decoration: _neuDeco(pressed: true),
+                  child: Row(children: [
+                    Expanded(
+                        child: _neuSelectableBtn("I", _selectedCategory == "I",
+                            () => setState(() => _selectedCategory = "I"))),
+                    const SizedBox(width: 5),
+                    Expanded(
+                        child: _neuSelectableBtn(
+                            "II",
+                            _selectedCategory == "II",
+                            () => setState(() => _selectedCategory = "II"))),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(flex: 1, child: _totalCounterWidget()),
             ]),
-            const SizedBox(height: 15),
-
-            // 3. ИНТЕРФЕЙС (ВЕЩИ ИЛИ ИНВЕНТАРЬ)
-            if (!_isInventory) _buildClothesUI() else _buildInventoryUI(),
-
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _sectionHeader("Розмірна сітка"),
+                if (_isInventory)
+                  Row(children: [
+                    Text(_invUseGrid ? "Сітка" : "Просте",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                            fontSize: 12)),
+                    Switch(
+                        value: _invUseGrid,
+                        activeColor: AppColors.accent,
+                        onChanged: (v) => setState(() => _invUseGrid = v)),
+                  ]),
+              ],
+            ),
+            if (!_isInventory || (_isInventory && _invUseGrid))
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                    children:
+                        (_isInventory ? _invTypes : _clothesTypes).map((t) {
+                  if (!_shouldShowType(t)) return const SizedBox();
+                  return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _typeChip(t));
+                }).toList()),
+              ),
+            const SizedBox(height: 5),
+            if ((_isInventory && !_invUseGrid) ||
+                (!_isInventory && _currentSubType == "Просте"))
+              _neuTextField(_simpleQtyCtrl, "Введіть кількість (шт)",
+                  isNum: true)
+            else
+              _buildUniversalGridBody(),
             const SizedBox(height: 40),
-
-            // 4. КНОПКА СОХРАНИТЬ
             GestureDetector(
               onTap: _isSaving ? null : _save,
-              child: Container(
-                height: 60,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 55,
                 alignment: Alignment.center,
-                decoration: _neuDeco().copyWith(color: AppColors.accent),
+                decoration: BoxDecoration(
+                    color: _isSaving ? Colors.grey : AppColors.accent,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: _isSaving
+                        ? null
+                        : [
+                            BoxShadow(
+                                color: AppColors.accent.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4))
+                          ]),
                 child: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("ЗБЕРЕГТИ",
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5)),
+                            letterSpacing: 1.2)),
               ),
             ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  // --- UI: ВЕЩИ ---
-  Widget _buildClothesUI() {
-    return Column(
-      children: [
-        // Ряд: Категория + Счетчик
-        Row(
-          children: [
-            Expanded(
-                child: _neuTextField(_catCtrl, "Категорія (напр. Футболки)")),
-            const SizedBox(width: 15),
-            _totalCounterWidget(), // ВОТ ОН, РОДНОЙ
-          ],
-        ),
-        const SizedBox(height: 15),
-
-        // Вкладки
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            children: _clothesTypes.map((t) {
-              if (!_shouldShowType(t)) return const SizedBox();
-              bool act = _currentSubType == t;
-              return Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: GestureDetector(
-                  onTap: () => _setSubType(t),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 10),
-                    decoration: _neuDeco(pressed: act),
-                    child: Text(t,
-                        style: TextStyle(
-                            color: act ? AppColors.accentBlue : Colors.grey,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // СЕТКА (ОБЩАЯ ДЛЯ ВСЕХ)
-        if (_currentSubType == "Просте")
-          _neuTextField(_simpleQtyCtrl, "Введіть кількість (шт)", isNum: true)
-        else
-          _buildUniversalGridBody(), // ИСПОЛЬЗУЕМ ОБЩУЮ ФУНКЦИЮ С РОСТАМИ
-      ],
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5, left: 5),
+      child: Text(title.toUpperCase(),
+          style: TextStyle(
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              letterSpacing: 0.8)),
     );
   }
 
-  // --- UI: ИНВЕНТАРЬ ---
-  Widget _buildInventoryUI() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 55,
-                padding: const EdgeInsets.all(4),
-                decoration: _neuDeco(pressed: true),
-                child: Row(children: [
-                  Expanded(
-                      child: _neuSelectableBtn("I", _invSelectedCat == "I",
-                          () => setState(() => _invSelectedCat = "I"))),
-                  Expanded(
-                      child: _neuSelectableBtn("II", _invSelectedCat == "II",
-                          () => setState(() => _invSelectedCat = "II"))),
-                ]),
-              ),
-            ),
-            const SizedBox(width: 15),
-            _totalCounterWidget(),
-          ],
-        ),
-        const SizedBox(height: 15),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(_invUseGrid ? "📐 СІТКА (ПК)" : "🔢 ПРОСТЕ ЧИСЛО",
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, color: AppColors.textMain)),
-          Switch(
-              value: _invUseGrid,
-              activeColor: AppColors.accent,
-              onChanged: (v) => setState(() => _invUseGrid = v)),
-        ]),
-        const SizedBox(height: 10),
-        if (!_invUseGrid)
-          _neuTextField(_simpleQtyCtrl, "Введіть кількість (шт)", isNum: true)
-        else
-          Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _invTypes.map((t) {
-                    if (!_shouldShowType(t)) return const SizedBox();
-                    bool act = _currentSubType == t;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: GestureDetector(
-                        onTap: () => _setSubType(t),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15, vertical: 10),
-                          decoration: _neuDeco(pressed: act),
-                          child: Text(t,
-                              style: TextStyle(
-                                  color: act ? Colors.purple : Colors.grey,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildUniversalGridBody(), // ИСПОЛЬЗУЕМ ТУ ЖЕ ОБЩУЮ ФУНКЦИЮ
-            ],
-          ),
-      ],
-    );
-  }
-
-  // === ГЛАВНАЯ ФУНКЦИЯ ПОСТРОЕНИЯ СЕТОК (ОБЩАЯ) ===
-  // Теперь она используется и для Вещей, и для Инвентаря.
-  // Поэтому Роста будут ВЕЗДЕ, где выбраны "Цифри" или "Букви".
   Widget _buildUniversalGridBody() {
     switch (_currentSubType) {
       case "Цифри":
-        return _build2DGrid(_digitsRows, _digitsCols); // ЕСТЬ РОСТ!
+        return _build2DGrid(_digitsRows, _digitsCols);
       case "Букви":
-        return _build2DGrid(_lettersRows, _lettersCols); // ЕСТЬ РОСТ!
+        return _build2DGrid(_lettersRows, _lettersCols);
       case "Взуття":
         return _build1DGrid(_shoesCols);
       case "Головні убори":
         return _build1DGrid(_hatsCols);
       case "ГУ (Діапазон)":
         return _build1DGrid(_hatsRangeCols);
+      case "ГУ (Широкі)":
+        return _build1DGrid(_hatsWideCols);
       case "Рукавички":
         return _build1DGrid(_glovesCols);
+      case "Рукавички (S-XL)":
+        return _build1DGrid(_glovesSLCols);
+      case "Білизна":
+        return _build1DGrid(_linenCols);
       default:
         return const SizedBox();
     }
   }
 
-  // Линейная сетка (Обувь и т.д.)
   Widget _build1DGrid(List<String> items) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
-      children: items.map((val) {
-        int qty = _quantities[val] ?? 0;
-        return _gridBtn(val, qty, () {
-          HapticFeedback.lightImpact();
-          setState(() => _quantities[val] = qty + 1);
-        }, () => _showBulkInputDialog(val, qty));
-      }).toList(),
-    );
-  }
-
-  // Матрица (РОСТ + РАЗМЕР)
-  Widget _build2DGrid(List<String> rows, List<String> cols) {
-    return Column(
-      children: [
-        // ВЫБОР РОСТА (ОН ТЕПЕРЬ ЕСТЬ ВСЕГДА)
-        const Text("Оберіть РОСТ:",
-            style: TextStyle(color: Colors.grey, fontSize: 12)),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: rows.map((r) {
-              bool active = _selectedRow == r;
-              return Padding(
-                padding: const EdgeInsets.only(right: 15),
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedRow = r),
-                  child: Container(
-                    width: 50,
-                    height: 45,
-                    alignment: Alignment.center,
-                    decoration: _neuDeco(pressed: active),
-                    child: Text(r,
-                        style: TextStyle(
-                            color: active
-                                ? (_isInventory
-                                    ? Colors.purple
-                                    : AppColors.accentBlue)
-                                : AppColors.textMain,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        Text("Розміри для росту $_selectedRow:",
-            style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        const SizedBox(height: 10),
-
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
+      child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
           alignment: WrapAlignment.center,
-          children: cols.map((c) {
-            String key = "$c-$_selectedRow"; // Ключ с ростом
-            int qty = _quantities[key] ?? 0;
-            return _gridBtn(c, qty, () {
-              if (_selectedRow.isEmpty) return;
+          children: items.map((val) {
+            int qty = _quantities[val] ?? 0;
+            return _gridBtn(val, qty, () {
               HapticFeedback.lightImpact();
-              setState(() => _quantities[key] = qty + 1);
-            }, () {
-              if (_selectedRow.isNotEmpty) _showBulkInputDialog(key, qty);
-            });
-          }).toList(),
-        )
-      ],
+              setState(() => _quantities[val] = qty + 1);
+            }, () => _showBulkInputDialog(val, qty));
+          }).toList()),
     );
   }
 
-  // --- КОМПОНЕНТЫ ---
+  Widget _build2DGrid(List<String> rows, List<String> cols) {
+    return Column(children: [
+      Text("ЗРІСТ:", style: TextStyle(color: Colors.grey, fontSize: 11)),
+      const SizedBox(height: 5),
+      SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 0),
+          child: Row(
+              children: rows.map((r) {
+            bool active = _selectedRow == r;
+            return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: GestureDetector(
+                    onTap: () => setState(() => _selectedRow = r),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 45,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          color: AppColors.bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: active
+                              ? Border.all(
+                                  color: _isInventory
+                                      ? Colors.purple
+                                      : AppColors.accentBlue,
+                                  width: 2)
+                              : null,
+                          boxShadow: active
+                              ? [
+                                  BoxShadow(
+                                      color: (_isInventory
+                                              ? Colors.purple
+                                              : AppColors.accentBlue)
+                                          .withOpacity(0.3),
+                                      blurRadius: 6)
+                                ]
+                              : [
+                                  BoxShadow(
+                                      color: AppColors.shadowTop,
+                                      offset: Offset(-2, -2),
+                                      blurRadius: 2),
+                                  BoxShadow(
+                                      color: AppColors.shadowBottom,
+                                      offset: Offset(2, 2),
+                                      blurRadius: 2)
+                                ]),
+                      child: Text(r,
+                          style: TextStyle(
+                              color: active
+                                  ? (_isInventory
+                                      ? Colors.purple
+                                      : AppColors.accentBlue)
+                                  : AppColors.textMain,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                    )));
+          }).toList())),
+      const SizedBox(height: 10),
+      Text("Розміри ($_selectedRow):",
+          style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.all(5),
+        child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: cols.map((c) {
+              String key = "$c-$_selectedRow";
+              int qty = _quantities[key] ?? 0;
+              return _gridBtn(c, qty, () {
+                if (_selectedRow.isEmpty) return;
+                HapticFeedback.lightImpact();
+                setState(() => _quantities[key] = qty + 1);
+              }, () {
+                if (_selectedRow.isNotEmpty) _showBulkInputDialog(key, qty);
+              });
+            }).toList()),
+      )
+    ]);
+  }
+
   Widget _gridBtn(
       String label, int qty, VoidCallback onTap, VoidCallback onLong) {
     bool active = qty > 0;
     Color actColor = _isInventory ? Colors.purple : AppColors.accentBlue;
+    double fontSize = label.length > 3 ? 11 : 13;
+
     return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLong,
-      child: Container(
-        width: 60,
-        height: 50,
-        decoration: _neuDeco(pressed: active),
-        child: Stack(
-          children: [
-            Center(
-                child: Text(label,
-                    style: TextStyle(
-                        color: active ? actColor : AppColors.textMain,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14))),
-            if (active)
-              Positioned(
-                  right: 2,
-                  top: 2,
-                  child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                          color: actColor, shape: BoxShape.circle),
-                      child: Text("$qty",
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold)))),
-          ],
-        ),
+        onTap: onTap,
+        onLongPress: onLong,
+        child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 52,
+            height: 45,
+            margin: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: active ? Border.all(color: actColor, width: 2) : null,
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                            color: actColor.withOpacity(0.3), blurRadius: 6)
+                      ]
+                    : [
+                        BoxShadow(
+                            color: AppColors.shadowTop,
+                            offset: const Offset(-2, -2),
+                            blurRadius: 3),
+                        BoxShadow(
+                            color: AppColors.shadowBottom,
+                            offset: const Offset(2, 2),
+                            blurRadius: 3)
+                      ]),
+            child: Stack(children: [
+              Center(
+                  child: Text(label,
+                      style: TextStyle(
+                          color: active ? actColor : AppColors.textMain,
+                          fontWeight: FontWeight.bold,
+                          fontSize: fontSize))),
+              if (active)
+                Positioned(
+                    right: 2,
+                    top: 2,
+                    child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                            color: actColor, shape: BoxShape.circle),
+                        child: Text("$qty",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold)))),
+            ])));
+  }
+
+  Widget _typeChip(String t) {
+    bool act = _currentSubType == t;
+    return GestureDetector(
+      onTap: () => _setSubType(t),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+            color: AppColors.bg,
+            borderRadius: BorderRadius.circular(16),
+            border: act
+                ? Border.all(
+                    color: _isInventory ? Colors.purple : AppColors.accentBlue,
+                    width: 1.5)
+                : null,
+            boxShadow: act
+                ? [
+                    BoxShadow(
+                        color: (_isInventory
+                                ? Colors.purple
+                                : AppColors.accentBlue)
+                            .withOpacity(0.2),
+                        blurRadius: 6)
+                  ]
+                : [
+                    BoxShadow(
+                        color: AppColors.shadowTop,
+                        offset: Offset(-2, -2),
+                        blurRadius: 3),
+                    BoxShadow(
+                        color: AppColors.shadowBottom,
+                        offset: Offset(2, 2),
+                        blurRadius: 3)
+                  ]),
+        child: Text(t,
+            style: TextStyle(
+                color: act
+                    ? (_isInventory ? Colors.purple : AppColors.accentBlue)
+                    : Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontSize: 12)),
       ),
     );
   }
@@ -604,19 +636,30 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   Widget _tabBtn(String txt, bool active, VoidCallback onTap) {
     return GestureDetector(
         onTap: onTap,
-        child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+        child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
                 color: active ? AppColors.bg : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: active
-                    ? [BoxShadow(color: Colors.black12, blurRadius: 4)]
+                    ? [
+                        BoxShadow(
+                            color: AppColors.shadowTop,
+                            offset: Offset(-2, -2),
+                            blurRadius: 4),
+                        BoxShadow(
+                            color: AppColors.shadowBottom,
+                            offset: Offset(2, 2),
+                            blurRadius: 4)
+                      ]
                     : null),
             alignment: Alignment.center,
             child: Text(txt,
                 style: TextStyle(
                     color: active ? AppColors.textMain : Colors.grey,
-                    fontWeight: FontWeight.bold))));
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14))));
   }
 
   Widget _whSelector() {
@@ -641,8 +684,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     Color actColor = _isInventory ? Colors.purple : AppColors.accentBlue;
     return GestureDetector(
         onTap: onTap,
-        child: Container(
-            margin: const EdgeInsets.all(4),
+        child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
                 color: active ? AppColors.bg : Colors.transparent,
@@ -652,28 +697,44 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                         BoxShadow(
                             color: AppColors.shadowTop,
                             offset: const Offset(-2, -2),
-                            blurRadius: 5),
+                            blurRadius: 4),
                         BoxShadow(
                             color: AppColors.shadowBottom,
                             offset: const Offset(2, 2),
-                            blurRadius: 5)
+                            blurRadius: 4)
                       ]
                     : null),
             child: Text(text,
                 style: TextStyle(
                     color: active ? actColor : Colors.grey,
-                    fontWeight: FontWeight.bold))));
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12))));
   }
 
   Widget _totalCounterWidget() {
     return Container(
-        width: 80,
-        height: 55,
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-        decoration: _neuDeco(),
+        height: 60,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+            color: AppColors.bg,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: AppColors.shadowTop,
+                  offset: const Offset(-2, -2),
+                  blurRadius: 4),
+              BoxShadow(
+                  color: AppColors.shadowBottom,
+                  offset: const Offset(2, 2),
+                  blurRadius: 4)
+            ]),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Text("ВСЬОГО",
-              style: TextStyle(fontSize: 10, color: Colors.grey)),
+              style: TextStyle(
+                  fontSize: 9,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold)),
           Text("$_totalCount",
               style: TextStyle(
                   fontSize: 20,
@@ -685,14 +746,28 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   Widget _neuTextField(TextEditingController ctrl, String hint,
       {bool isNum = false}) {
     return Container(
-        decoration: _neuDeco(pressed: true),
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        decoration: BoxDecoration(
+            color: AppColors.bg,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: AppColors.shadowTop,
+                  offset: const Offset(2, 2),
+                  blurRadius: 2,
+                  spreadRadius: -1),
+              BoxShadow(
+                  color: AppColors.shadowBottom,
+                  offset: const Offset(-2, -2),
+                  blurRadius: 2,
+                  spreadRadius: -1)
+            ]),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
         child: TextField(
             controller: ctrl,
             keyboardType: isNum ? TextInputType.number : TextInputType.text,
             style: TextStyle(
                 color: AppColors.textMain,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold),
             decoration: InputDecoration(
                 hintText: hint,
@@ -704,29 +779,29 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   BoxDecoration _neuDeco({bool pressed = false}) {
     return BoxDecoration(
         color: AppColors.bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: pressed
             ? [
                 BoxShadow(
                     color: AppColors.shadowTop,
                     offset: const Offset(2, 2),
                     blurRadius: 3,
-                    spreadRadius: -2),
+                    spreadRadius: -1),
                 BoxShadow(
                     color: AppColors.shadowBottom,
                     offset: const Offset(-2, -2),
                     blurRadius: 3,
-                    spreadRadius: -2)
+                    spreadRadius: -1)
               ]
             : [
                 BoxShadow(
                     color: AppColors.shadowTop,
                     offset: const Offset(-3, -3),
-                    blurRadius: 6),
+                    blurRadius: 5),
                 BoxShadow(
                     color: AppColors.shadowBottom,
                     offset: const Offset(3, 3),
-                    blurRadius: 6)
+                    blurRadius: 5)
               ]);
   }
 }
