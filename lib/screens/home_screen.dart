@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart'; // 🔥 НОВАЯ БИБЛИОТЕКА
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
 import '../services/db_service.dart';
@@ -35,6 +36,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initData() async {
     await _loadLocalData();
     _syncData();
+  }
+
+  // 🔥 ФУНКЦИЯ ВИБРАЦИИ (Тяжелая артиллерия)
+  void _vibrate({int duration = 50}) async {
+    // Проверяем, есть ли вибромотор вообще
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: duration); // duration в миллисекундах
+    }
   }
 
   Future<void> _loadLocalData() async {
@@ -79,6 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteItem(int localId, int? serverId) async {
+    // 🔥 Вибрация 50мс (короткая)
+    _vibrate(duration: 50);
+
     bool confirm = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -99,6 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (confirm) {
+      // 🔥 Вибрация 100мс (помощнее)
+      _vibrate(duration: 100);
+
       final db = await DBService().localDb;
       await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
           where: 'local_id = ?', whereArgs: [localId]);
@@ -135,6 +150,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
+    // 🔥 Вибрация 40мс (очень четкий клик)
+    _vibrate(duration: 40);
+
     Map<String, dynamic> newSizes = Map.from(item['size_data'] ?? {});
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
     int newTotal = currentTotal;
@@ -171,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showBulkDialog(Map<String, dynamic> item, String? sizeKey, bool isAdd) {
+    _vibrate(duration: 30);
     TextEditingController qtyCtrl = TextEditingController();
     String title = isAdd ? "Додати кількість" : "Відняти кількість";
 
@@ -225,6 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
+              _vibrate(duration: 60);
               int val = int.tryParse(qtyCtrl.text) ?? 0;
               if (val > 0) {
                 int delta = isAdd ? val : -val;
@@ -305,6 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: const Icon(Icons.add, color: Colors.white, size: 32),
         onPressed: () async {
+          _vibrate(duration: 50); // Вибрация кнопки
           final res = await Navigator.push(context,
               MaterialPageRoute(builder: (_) => const AddUniversalScreen()));
           if (res == true) {
@@ -361,13 +382,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ]))
               ]),
               Row(children: [
-                _iconBtn(
-                    Icons.history,
-                    AppColors.accentBlue,
-                    () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const LogsScreen()))),
+                _iconBtn(Icons.history, AppColors.accentBlue, () {
+                  _vibrate(duration: 20);
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const LogsScreen()));
+                }),
                 const SizedBox(width: 15),
                 _iconBtn(Icons.settings, AppColors.textMain, () async {
+                  _vibrate(duration: 20);
                   await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -461,6 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool active = _activeFilter == key;
     return GestureDetector(
       onTap: () {
+        _vibrate(duration: 20); // Смена фильтра
         setState(() {
           _activeFilter = key;
           _applyFilters();
@@ -517,22 +540,17 @@ class _HomeScreenState extends State<HomeScreen> {
     String cat = item['category'] ?? "";
     String wh = item['warehouse'] ?? "";
 
-    // 🔥 СУПЕР-НАДЕЖНАЯ ПРОВЕРКА: "Это Инвентарь?"
-    // Проверяем сразу 3 поля, чтобы точно не ошибиться
     var rawIsInv = item['is_inventory'];
     bool flagCheck =
         (rawIsInv == 1) || (rawIsInv == true) || (rawIsInv.toString() == "1");
 
     String typeStr = (item['item_type'] ?? item['type'] ?? "").toString();
     bool typeCheck = typeStr == "Інвентар";
-
-    // Если хоть что-то говорит "Да", значит это инвентарь
     bool isInventory = flagCheck || typeCheck;
 
     String rawDate = item['date_added']?.toString() ?? "";
     String date = (rawDate.length >= 10) ? rawDate.substring(0, 10) : rawDate;
 
-    // 🎨 ЦВЕТА И ИКОНКИ
     IconData typeIcon = isInventory ? Icons.handyman : Icons.checkroom;
     Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
     String subTitle = isInventory ? "Інвентар • $wh" : "Кат: $cat • $wh";
@@ -551,12 +569,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.delete, color: Colors.white, size: 30),
       ),
       confirmDismiss: (dir) async {
+        _vibrate(duration: 50); // Вибрация при свайпе
         await _deleteItem(item['local_id'], item['server_id']);
         return false;
       },
       child: GestureDetector(
-        onTap: () =>
-            setState(() => _expandedItemId = expanded ? null : item['id']),
+        onTap: () {
+          _vibrate(duration: 20); // Клик по карточке
+          setState(() => _expandedItemId = expanded ? null : item['id']);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,

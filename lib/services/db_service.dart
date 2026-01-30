@@ -13,7 +13,7 @@ class DBService {
   Database? _localDb;
   PostgreSQLConnection? _pgConnection;
 
-  // 🔥 БЛОКИРОВКА СИНХРОНИЗАЦИИ (Чтобы не было двойных запусков)
+  // 🔥 БЛОКИРОВКА СИНХРОНИЗАЦИИ
   bool _isSyncActive = false;
 
   // ==========================================
@@ -28,7 +28,6 @@ class DBService {
 
   Future<Database> _initLocalDB() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    // Оставляем v14, структура хорошая
     String path = join(documentsDirectory.path, "inventory_system_v14.db");
 
     return await openDatabase(path, version: 1, onCreate: (db, version) async {
@@ -69,40 +68,47 @@ class DBService {
   }
 
   // ==========================================
-  // ☁️ ОБЛАКО
+  // ☁️ ОБЛАКО (ИСПРАВЛЕН ТАЙМ-АУТ)
   // ==========================================
 
   Future<bool> initConnection() async {
+    // Если соединение есть и открыто - используем его
     if (_pgConnection != null && !_pgConnection!.isClosed) return true;
+
     try {
+      print("🔄 Подключение к Supabase...");
+
+      // 🔥 FIX: Увеличены тайм-ауты для медленного интернета
       final settings = PostgreSQLConnection(
           'aws-1-eu-west-1.pooler.supabase.com', 5432, 'postgres',
           username: 'postgres.qzgatfjezjzqshqpuejh',
           password: 'EgorPolisuk0711',
           useSSL: true,
-          timeoutInSeconds: 5,
-          queryTimeoutInSeconds: 10);
+          timeoutInSeconds: 30, // Было 5 -> Стало 30
+          queryTimeoutInSeconds: 60); // Было 10 -> Стало 60
+
       await settings.open();
       _pgConnection = settings;
+      print("✅ Успешное подключение к Supabase");
       return true;
     } catch (e) {
-      print("❌ Connection error: $e");
+      print("❌ Ошибка подключения (Cloud): $e");
+      _pgConnection = null; // Сбрасываем, чтобы попробовать снова
       return false;
     }
   }
 
   // ==========================================
-  // 🚀 СИНХРОНИЗАЦИЯ (С ЗАЩИТОЙ ОТ ДВОЙНОГО ЗАПУСКА)
+  // 🚀 СИНХРОНИЗАЦИЯ
   // ==========================================
 
   Future<void> syncWithCloud() async {
-    // 🔥 ГЛАВНАЯ ЗАЩИТА: Если уже идет синхронизация — выходим!
     if (_isSyncActive) {
-      print("⏳ Синхронизация уже идет, пропускаем дублирующий запрос.");
+      print("⏳ Синхронизация уже идет, ждем...");
       return;
     }
 
-    _isSyncActive = true; // Блокируем вход
+    _isSyncActive = true;
 
     try {
       bool connected = await initConnection();
@@ -129,18 +135,18 @@ class DBService {
         }
       }
 
-      // 2. ОТПРАВКА ТОВАРОВ
+      // 2. ОТПРАВКА ТОВАРОВ (Создание / Обновление / Удаление)
       final unsynced = await db.query('items', where: 'is_unsynced = 1');
       for (var item in unsynced) {
         await _uploadSingleItem(db, item);
       }
 
-      // 3. СКАЧИВАНИЕ
+      // 3. СКАЧИВАНИЕ НОВЫХ ДАННЫХ
       await _fastMergeFromCloud(db);
     } catch (e) {
-      print("❌ Sync error: $e");
+      print("❌ Общая ошибка синхронизации: $e");
     } finally {
-      _isSyncActive = false; // 🔥 Снимаем блокировку, даже если была ошибка
+      _isSyncActive = false;
     }
   }
 
@@ -152,22 +158,27 @@ class DBService {
 
     try {
       if (isDeleted) {
+        // УДАЛЕНИЕ
         if (serverId != null) {
           await _pgConnection!.query("DELETE FROM items WHERE id = @id",
               substitutionValues: {'id': serverId});
         }
+        // Удаляем из локальной базы окончательно
         await db.delete('items', where: 'local_id = ?', whereArgs: [localId]);
       } else if (serverId == null) {
-        // Проверка дубликата по UID
+        // СОЗДАНИЕ (INSERT)
+        // Сначала проверим, нет ли такого UID на сервере (защита от дублей)
         var check = await _pgConnection!.query(
             "SELECT id FROM items WHERE uid = @uid",
             substitutionValues: {'uid': uid});
 
         if (check.isNotEmpty) {
+          // Если уже есть - просто привязываем ID
           int existingId = check.first[0] as int;
           await db.update('items', {'server_id': existingId, 'is_unsynced': 0},
               where: 'local_id = ?', whereArgs: [localId]);
         } else {
+          // Если нет - заливаем
           await _pgConnection!.query(
             "INSERT INTO items (name, location, category, warehouse, total_quantity, item_type, size_data, is_inventory, date_added, uid, device) VALUES (@name, @loc, @cat, @wh, @total, @type, @size, @isInv, @date, @uid, 'Phone')",
             substitutionValues: {
@@ -183,6 +194,7 @@ class DBService {
               'uid': uid
             },
           );
+          // Получаем ID только что созданной записи
           final res = await _pgConnection!.query(
               "SELECT id FROM items WHERE uid = @uid",
               substitutionValues: {'uid': uid});
@@ -193,18 +205,20 @@ class DBService {
           }
         }
       } else {
+        // ОБНОВЛЕНИЕ (UPDATE)
         await _pgConnection!.query(
-            "UPDATE items SET size_data = @size, total_quantity = @total WHERE id = @id",
+            "UPDATE items SET size_data = @size, total_quantity = @total, date_edited = @date WHERE id = @id",
             substitutionValues: {
               'size': item['size_data'],
               'total': item['total_quantity'],
+              'date': DateTime.now().toIso8601String(),
               'id': serverId
             });
         await db.update('items', {'is_unsynced': 0},
             where: 'local_id = ?', whereArgs: [localId]);
       }
     } catch (e) {
-      print("Upload error: $e");
+      print("Ошибка загрузки элемента ($uid): $e");
     }
   }
 
@@ -247,28 +261,36 @@ class DBService {
             'is_deleted': 0
           };
 
+          // Ищем, есть ли такой товар локально
           List<Map> checkId = await txn
               .query('items', where: 'server_id = ?', whereArgs: [sId]);
+
           if (checkId.isNotEmpty) {
+            // Если есть - обновляем (но только если локально не меняли недавно)
+            // Для простоты - обновляем всегда, так как сервер главнее
             await txn.update('items', data,
                 where: 'server_id = ?', whereArgs: [sId]);
           } else {
+            // Пробуем найти по UID
             List<Map> checkUid =
                 await txn.query('items', where: 'uid = ?', whereArgs: [uid]);
             if (checkUid.isNotEmpty) {
               await txn
                   .update('items', data, where: 'uid = ?', whereArgs: [uid]);
             } else {
+              // Если нет ни по ID, ни по UID - создаем
               await txn.insert('items', data);
             }
           }
         }
 
+        // Удаляем локальные товары, которых нет на сервере (но только те, что уже были синхронизированы)
         if (cloudIds.isNotEmpty) {
           String ids = cloudIds.join(',');
           await txn.rawDelete(
               'DELETE FROM items WHERE server_id IS NOT NULL AND server_id NOT IN ($ids)');
         } else if (results.isEmpty) {
+          // Если сервер пуст - чистим все синхронизированное
           await txn.rawDelete('DELETE FROM items WHERE server_id IS NOT NULL');
         }
       });
@@ -276,6 +298,8 @@ class DBService {
       print("Merge error: $e");
     }
   }
+
+  // --- CRUD МЕТОДЫ ---
 
   Future<void> saveItem(Map<String, dynamic> item) async {
     final db = await localDb;
@@ -290,13 +314,13 @@ class DBService {
       'size_data': jsonEncode(item['size_data'] ?? {}),
       'is_inventory': (item['is_inventory'] == true) ? 1 : 0,
       'date_added': DateTime.now().toIso8601String(),
-      'is_unsynced': 1,
+      'is_unsynced': 1, // Помечаем как требующий отправки
       'is_deleted': 0
     });
     await _addLog("Додано", item['name'],
         "К-сть: ${item['total']} | Кат: ${item['category']}");
 
-    // Внимание! Вызов синхронизации здесь!
+    // Запускаем синхронизацию в фоне
     syncWithCloud();
   }
 
@@ -312,7 +336,29 @@ class DBService {
         },
         where: 'local_id = ?',
         whereArgs: [localId]);
-    await _addLog("Зміна", name, "К-сть: $newTotal | Кат: $category");
+
+    // Не пишем лог на каждое нажатие +/-, это слишком много.
+    // Но можно раскомментировать, если нужно.
+    // await _addLog("Зміна", name, "К-сть: $newTotal");
+
+    syncWithCloud();
+  }
+
+  Future<void> updateItemQuantity(int localId, int newTotal) async {
+    final db = await localDb;
+    await db.update('items', {'total_quantity': newTotal, 'is_unsynced': 1},
+        where: 'local_id = ?', whereArgs: [localId]);
+    syncWithCloud();
+  }
+
+  // 🔥 НОВЫЙ МЕТОД: УДАЛЕНИЕ
+  Future<void> deleteItem(int localId) async {
+    final db = await localDb;
+    // Не удаляем физически, а ставим флаг удаления
+    await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
+        where: 'local_id = ?', whereArgs: [localId]);
+
+    await _addLog("Видалення", "ID: $localId", "Видалено з телефону");
     syncWithCloud();
   }
 
