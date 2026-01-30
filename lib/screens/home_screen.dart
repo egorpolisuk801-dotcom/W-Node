@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vibration/vibration.dart'; // 🔥 НОВАЯ БИБЛИОТЕКА
+import 'package:vibration/vibration.dart'; // 🔥 Библиотека для вибрации
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
 import '../services/db_service.dart';
@@ -38,11 +38,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncData();
   }
 
-  // 🔥 ФУНКЦИЯ ВИБРАЦИИ (Тяжелая артиллерия)
+  // 🔥 ФУНКЦИЯ ВИБРАЦИИ (Работает даже на S8)
   void _vibrate({int duration = 50}) async {
-    // Проверяем, есть ли вибромотор вообще
     if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: duration); // duration в миллисекундах
+      Vibration.vibrate(duration: duration);
     }
   }
 
@@ -88,8 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteItem(int localId, int? serverId) async {
-    // 🔥 Вибрация 50мс (короткая)
-    _vibrate(duration: 50);
+    _vibrate(duration: 50); // Легкая вибрация при свайпе
 
     bool confirm = await showDialog(
       context: context,
@@ -111,8 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (confirm) {
-      // 🔥 Вибрация 100мс (помощнее)
-      _vibrate(duration: 100);
+      _vibrate(duration: 100); // Сильная вибрация при удалении
 
       final db = await DBService().localDb;
       await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
@@ -129,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
         final name = (item['name'] ?? "").toString().toLowerCase();
         final cat = (item['category'] ?? "").toString().toLowerCase();
         final wh = (item['warehouse'] ?? "").toString();
-        // Проверяем и type, и item_type
         final type =
             (item['item_type'] ?? item['type'] ?? "").toString().toLowerCase();
 
@@ -150,8 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
-    // 🔥 Вибрация 40мс (очень четкий клик)
-    _vibrate(duration: 40);
+    _vibrate(duration: 40); // Четкий клик
 
     Map<String, dynamic> newSizes = Map.from(item['size_data'] ?? {});
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
@@ -259,6 +254,36 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 🔥 ДИЗАЙН ЗНАЧКА КАТЕГОРИИ
+  Widget _buildCategoryBadge(String category) {
+    String cleanCat = category.trim().toUpperCase();
+    if (cleanCat.isEmpty || cleanCat == "NULL") return const SizedBox.shrink();
+
+    String label = "I";
+    Color color = Colors.cyanAccent;
+
+    // Проверка на II категорию
+    if (cleanCat.contains("II") || cleanCat.contains("2")) {
+      label = "II";
+      color = Colors.orangeAccent;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
+      ),
+      child: Text(
+        label,
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -298,10 +323,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 10),
                       const Text("Список пустий",
                           style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 5),
-                      Text("Потягніть вниз ⬇️ для оновлення",
-                          style:
-                              TextStyle(color: Colors.grey[400], fontSize: 12)),
                     ],
                   ),
                 ))
@@ -325,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: const Icon(Icons.add, color: Colors.white, size: 32),
         onPressed: () async {
-          _vibrate(duration: 50); // Вибрация кнопки
+          _vibrate(duration: 50);
           final res = await Navigator.push(context,
               MaterialPageRoute(builder: (_) => const AddUniversalScreen()));
           if (res == true) {
@@ -483,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool active = _activeFilter == key;
     return GestureDetector(
       onTap: () {
-        _vibrate(duration: 20); // Смена фильтра
+        _vibrate(duration: 20);
         setState(() {
           _activeFilter = key;
           _applyFilters();
@@ -509,10 +530,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         offset: const Offset(-2, -2),
                         blurRadius: 3,
                         spreadRadius: -2),
-                    BoxShadow(
-                        color: AppColors.accent.withOpacity(0.1),
-                        blurRadius: 6,
-                        spreadRadius: 1)
                   ]
                 : [
                     BoxShadow(
@@ -543,7 +560,6 @@ class _HomeScreenState extends State<HomeScreen> {
     var rawIsInv = item['is_inventory'];
     bool flagCheck =
         (rawIsInv == 1) || (rawIsInv == true) || (rawIsInv.toString() == "1");
-
     String typeStr = (item['item_type'] ?? item['type'] ?? "").toString();
     bool typeCheck = typeStr == "Інвентар";
     bool isInventory = flagCheck || typeCheck;
@@ -553,7 +569,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     IconData typeIcon = isInventory ? Icons.handyman : Icons.checkroom;
     Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
-    String subTitle = isInventory ? "Інвентар • $wh" : "Кат: $cat • $wh";
+
+    // Формируем подзаголовок (Только склад, так как категория теперь значком)
+    String subTitle = wh;
 
     return Dismissible(
       key: ValueKey(item['local_id']),
@@ -569,13 +587,13 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.delete, color: Colors.white, size: 30),
       ),
       confirmDismiss: (dir) async {
-        _vibrate(duration: 50); // Вибрация при свайпе
+        _vibrate(duration: 50);
         await _deleteItem(item['local_id'], item['server_id']);
         return false;
       },
       child: GestureDetector(
         onTap: () {
-          _vibrate(duration: 20); // Клик по карточке
+          _vibrate(duration: 20);
           setState(() => _expandedItemId = expanded ? null : item['id']);
         },
         child: AnimatedContainer(
@@ -603,6 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
+                // ИКОНКА СЛЕВА
                 Container(
                   margin: const EdgeInsets.only(right: 12),
                   padding: const EdgeInsets.all(10),
@@ -611,24 +630,40 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle),
                   child: Icon(typeIcon, color: typeColor, size: 24),
                 ),
+
+                // ЦЕНТРАЛЬНАЯ ЧАСТЬ
                 Expanded(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                      // НАЗВАНИЕ
                       Text(name,
                           style: TextStyle(
                               color: AppColors.textMain,
                               fontSize: 18,
-                              fontWeight: FontWeight.bold)),
+                              fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 6),
-                      Row(children: [
-                        Text(subTitle,
-                            style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold))
-                      ])
+
+                      // РЯД: [КАТЕГОРИЯ] + [МЕСТО]
+                      Row(
+                        children: [
+                          // 🔥 ИСПРАВЛЕНИЕ: Показываем категорию ВСЕГДА
+                          _buildCategoryBadge(cat),
+
+                          Icon(Icons.place, size: 12, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(subTitle,
+                              style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold))
+                        ],
+                      )
                     ])),
+
+                // КОЛИЧЕСТВО
                 Container(
                     width: 50,
                     height: 50,
@@ -703,11 +738,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (sizes.length == 1) {
       String key = sizes.keys.first;
       int val = int.tryParse(sizes[key].toString()) ?? 0;
-
       String label = key;
       String subLabel = "";
       String normalizedKey = key.replaceAll("/", "-");
-
       if (normalizedKey.contains("-")) {
         var parts = normalizedKey.split("-");
         label = parts[0];
@@ -738,11 +771,9 @@ class _HomeScreenState extends State<HomeScreen> {
       itemBuilder: (ctx, i) {
         String key = sizes.keys.elementAt(i);
         int val = int.tryParse(sizes[key].toString()) ?? 0;
-
         String label = key;
         String subLabel = "";
         String normalizedKey = key.replaceAll("/", "-");
-
         if (normalizedKey.contains("-")) {
           var parts = normalizedKey.split("-");
           label = parts[0];
