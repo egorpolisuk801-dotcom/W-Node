@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:vibration/vibration.dart'; // 🔥 Библиотека для вибрации
+import 'package:vibration/vibration.dart';
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
 import '../services/db_service.dart';
@@ -7,6 +8,7 @@ import '../services/db_service.dart';
 import 'add_universal_screen.dart';
 import 'settings_screen.dart';
 import 'logs_screen.dart';
+import 'season_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,8 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isConnected = false;
 
   String _searchQuery = "";
-  String _activeFilter = "Все";
+  String _activeFilter = "Все"; // Текущий фильтр
   int? _expandedItemId;
+
+  // Списки для фильтрации (теперь хранят ID)
+  Set<String> _winterSet = {};
+  Set<String> _summerSet = {};
+  Set<String> _invSet = {};
 
   @override
   void initState() {
@@ -38,25 +45,57 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncData();
   }
 
-  // 🔥 ФУНКЦИЯ ВИБРАЦИИ (Работает даже на S8)
   void _vibrate({int duration = 50}) async {
     if (await Vibration.hasVibrator() ?? false) {
       Vibration.vibrate(duration: duration);
     }
   }
 
+  void _showNotification(String message, bool isPositive) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(children: [
+          Icon(isPositive ? Icons.check_circle : Icons.remove_circle,
+              color: Colors.white),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text(message,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)))
+        ]),
+        backgroundColor: isPositive ? Colors.green[700] : Colors.red[700],
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).size.height - 200,
+            left: 20,
+            right: 20),
+        duration: const Duration(milliseconds: 800),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      ),
+    );
+  }
+
   Future<void> _loadLocalData() async {
     try {
       final data = await DBService().getAllItems();
+
+      // Загружаем списки (ожидаем ID товаров)
+      final w = await DBService().getCustomList('winter');
+      final s = await DBService().getCustomList('summer');
+      final i = await DBService().getCustomList('inventory');
+
       if (mounted) {
         setState(() {
           _items = data;
+          _winterSet = w.toSet();
+          _summerSet = s.toSet();
+          _invSet = i.toSet();
           _applyFilters();
           _isLoading = false;
         });
       }
     } catch (e) {
-      print("Error loading local data: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -64,11 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _syncData() async {
     if (_isSyncing) return;
     if (mounted) setState(() => _isSyncing = true);
-
     try {
       await DBService().syncWithCloud();
       await _loadLocalData();
-
       if (mounted) {
         setState(() {
           _isConnected = true;
@@ -76,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      print("Sync error: $e");
       if (mounted) {
         setState(() {
           _isConnected = false;
@@ -86,202 +122,87 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _deleteItem(int localId, int? serverId) async {
-    _vibrate(duration: 50); // Легкая вибрация при свайпе
-
-    bool confirm = await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text("Видалити?", style: TextStyle(color: AppColors.textMain)),
-        content: Text("Цей запис буде переміщено в архів (видалено).",
-            style: TextStyle(color: Colors.grey)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text("Ні", style: TextStyle(color: Colors.grey))),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text("Так", style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
-    if (confirm) {
-      _vibrate(duration: 100); // Сильная вибрация при удалении
-
-      final db = await DBService().localDb;
-      await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
-          where: 'local_id = ?', whereArgs: [localId]);
-
-      _loadLocalData();
-      DBService().syncWithCloud();
-    }
-  }
-
-  void _applyFilters() {
-    setState(() {
-      _filteredItems = _items.where((item) {
-        final name = (item['name'] ?? "").toString().toLowerCase();
-        final cat = (item['category'] ?? "").toString().toLowerCase();
-        final wh = (item['warehouse'] ?? "").toString();
-        final type =
-            (item['item_type'] ?? item['type'] ?? "").toString().toLowerCase();
-
-        final search = _searchQuery.toLowerCase();
-        bool matchSearch = name.contains(search) ||
-            cat.contains(search) ||
-            type.contains(search);
-
-        bool matchWh = true;
-        final config = UserConfig();
-        if (_activeFilter == "Склад 1") matchWh = (wh == config.wh1Name);
-        if (_activeFilter == "Склад 2") matchWh = (wh == config.wh2Name);
-
-        return matchSearch && matchWh;
-      }).toList();
-    });
-  }
-
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
-    _vibrate(duration: 40); // Четкий клик
-
+    _vibrate(duration: 40);
     Map<String, dynamic> newSizes = Map.from(item['size_data'] ?? {});
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
-    int newTotal = currentTotal;
 
     if (sizeKey != null) {
       int cur = int.tryParse(newSizes[sizeKey].toString()) ?? 0;
       int next = cur + delta;
       if (next < 0) return;
       newSizes[sizeKey] = next;
-
-      newTotal = 0;
-      newSizes.forEach((k, v) => newTotal += int.tryParse(v.toString()) ?? 0);
+      int tempTotal = 0;
+      newSizes.forEach((k, v) => tempTotal += int.tryParse(v.toString()) ?? 0);
+      item['total'] = tempTotal;
     } else {
-      newTotal += delta;
-      if (newTotal < 0) return;
+      int next = currentTotal + delta;
+      if (next < 0) return;
+      item['total'] = next;
     }
+    item['size_data'] = newSizes;
+    setState(() {});
 
-    setState(() {
-      item['size_data'] = newSizes;
-      item['total'] = newTotal;
+    String actionName = item['name'];
+    String sizeInfo = sizeKey != null ? " ($sizeKey)" : "";
+    String sign = delta > 0 ? "+" : "";
+    _showNotification("$actionName$sizeInfo $sign$delta", delta > 0);
+
+    Future.delayed(Duration.zero, () async {
+      try {
+        await DBService().updateItemSizes(item['id'], item['name'],
+            item['category'], newSizes, item['total']);
+        String details = sizeKey != null
+            ? "Розмір $sizeKey: $sign$delta"
+            : "Загальна к-сть: $sign$delta";
+        await DBService().logHistory(
+            item['name'], delta > 0 ? "Додано" : "Вилучено", details);
+      } catch (e) {
+        _loadLocalData();
+      }
     });
-
-    try {
-      await DBService().updateItemSizes(
-        item['id'],
-        item['name'],
-        item['category'],
-        newSizes,
-        newTotal,
-      );
-    } catch (e) {
-      _loadLocalData();
-    }
   }
 
-  void _showBulkDialog(Map<String, dynamic> item, String? sizeKey, bool isAdd) {
-    _vibrate(duration: 30);
-    TextEditingController qtyCtrl = TextEditingController();
-    String title = isAdd ? "Додати кількість" : "Відняти кількість";
+  // 🔥 ИСПРАВЛЕННАЯ ЛОГИКА ФИЛЬТРАЦИИ
+  // Теперь проверяем по ID, чтобы не путать одинаковые имена
+  void _applyFilters() {
+    setState(() {
+      _filteredItems = _items.where((item) {
+        final name = (item['name'] ?? "").toString();
+        // Получаем ID товара для точной проверки в списках
+        final String itemId = item['id'].toString();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(title, style: TextStyle(color: AppColors.textMain)),
-        content: Container(
-          decoration: BoxDecoration(
-              color: AppColors.bg,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                    color: AppColors.shadowTop,
-                    offset: const Offset(2, 2),
-                    blurRadius: 3,
-                    spreadRadius: -2),
-                BoxShadow(
-                    color: AppColors.shadowBottom,
-                    offset: const Offset(-2, -2),
-                    blurRadius: 3,
-                    spreadRadius: -2),
-              ]),
-          child: TextField(
-            controller: qtyCtrl,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            style: TextStyle(
-                color: AppColors.textMain,
-                fontSize: 18,
-                fontWeight: FontWeight.bold),
-            decoration: const InputDecoration(
-                hintText: "Введіть число",
-                hintStyle: TextStyle(color: Colors.grey),
-                filled: false,
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 15, vertical: 15)),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child:
-                  const Text("Відміна", style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-            ),
-            onPressed: () {
-              _vibrate(duration: 60);
-              int val = int.tryParse(qtyCtrl.text) ?? 0;
-              if (val > 0) {
-                int delta = isAdd ? val : -val;
-                _updateQuantity(item, sizeKey, delta);
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text("ОК", style: TextStyle(color: Colors.white)),
-          )
-        ],
-      ),
-    );
-  }
+        // Поиск по имени и категории
+        final searchParams = name.toLowerCase() +
+            (item['category'] ?? "").toString().toLowerCase();
+        final search = _searchQuery.toLowerCase();
 
-  // 🔥 ДИЗАЙН ЗНАЧКА КАТЕГОРИИ
-  Widget _buildCategoryBadge(String category) {
-    String cleanCat = category.trim().toUpperCase();
-    if (cleanCat.isEmpty || cleanCat == "NULL") return const SizedBox.shrink();
+        bool matchSearch = searchParams.contains(search);
+        bool matchFilter = true;
+        final config = UserConfig();
 
-    String label = "I";
-    Color color = Colors.cyanAccent;
+        // Данные склада
+        String itemWh = (item['warehouse'] ?? "").toString().toUpperCase();
+        String wh1 = config.wh1Name.toUpperCase();
+        String wh2 = config.wh2Name.toUpperCase();
 
-    // Проверка на II категорию
-    if (cleanCat.contains("II") || cleanCat.contains("2")) {
-      label = "II";
-      color = Colors.orangeAccent;
-    }
+        if (_activeFilter == "Зима") {
+          // ⚠️ ВАЖНО: Проверяем наличие ID в списке, а не Имени
+          matchFilter = _winterSet.contains(itemId);
+        } else if (_activeFilter == "Літо") {
+          matchFilter = _summerSet.contains(itemId);
+        } else if (_activeFilter == "Видача") {
+          matchFilter = _invSet.contains(itemId);
+        } else if (_activeFilter == "Склад 1") {
+          matchFilter = itemWh.contains(wh1);
+        } else if (_activeFilter == "Склад 2") {
+          matchFilter = itemWh.contains(wh2);
+        }
 
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.5), width: 1),
-      ),
-      child: Text(
-        label,
-        style:
-            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
-      ),
-    );
+        return matchSearch && matchFilter;
+      }).toList();
+    });
   }
 
   @override
@@ -293,21 +214,13 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: _syncData,
           color: AppColors.accent,
           backgroundColor: AppColors.bg,
-          notificationPredicate: (notification) {
-            return notification.depth == 0;
-          },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(
-                child: _buildHeader(),
-              ),
+              SliverToBoxAdapter(child: _buildHeader()),
               SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyFilterDelegate(
-                  child: _buildFilterRow(),
-                ),
-              ),
+                  pinned: true,
+                  delegate: _StickyFilterDelegate(child: _buildFilterRow())),
               if (_isLoading)
                 const SliverFillRemaining(
                     child: Center(
@@ -316,25 +229,21 @@ class _HomeScreenState extends State<HomeScreen> {
               else if (_filteredItems.isEmpty)
                 SliverFillRemaining(
                     child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
                       Icon(Icons.inbox, size: 60, color: Colors.grey[300]),
                       const SizedBox(height: 10),
                       const Text("Список пустий",
-                          style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                ))
+                          style: TextStyle(color: Colors.grey))
+                    ])))
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 15, 20, 100),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _itemCard(_filteredItems[i]),
-                      childCount: _filteredItems.length,
-                    ),
-                  ),
+                      delegate: SliverChildBuilderDelegate(
+                          (ctx, i) => _itemCard(_filteredItems[i]),
+                          childCount: _filteredItems.length)),
                 ),
             ],
           ),
@@ -349,9 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _vibrate(duration: 50);
           final res = await Navigator.push(context,
               MaterialPageRoute(builder: (_) => const AddUniversalScreen()));
-          if (res == true) {
-            _loadLocalData();
-          }
+          if (res == true) _loadLocalData();
         },
       ),
     );
@@ -362,101 +269,101 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 25),
       margin: const EdgeInsets.only(bottom: 5),
       decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowBottom,
-            offset: const Offset(0, 5),
-            blurRadius: 15,
-          )
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(children: [
-                Text("W-Node",
-                    style: TextStyle(
-                        color: AppColors.textMain,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 26)),
-                const SizedBox(width: 10),
-                Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                        color: _isConnected
-                            ? Colors.green
-                            : (_isSyncing ? Colors.orange : Colors.red),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: (_isConnected ? Colors.green : Colors.red)
-                                  .withOpacity(0.6),
-                              blurRadius: 8)
-                        ]))
+          color: AppColors.bg,
+          borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.shadowBottom,
+                offset: const Offset(0, 5),
+                blurRadius: 15)
+          ]),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Row(children: [
+            Text("W-Node",
+                style: TextStyle(
+                    color: AppColors.textMain,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 26)),
+            const SizedBox(width: 10),
+            Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                    color: _isConnected
+                        ? Colors.green
+                        : (_isSyncing ? Colors.orange : Colors.red),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: (_isConnected ? Colors.green : Colors.red)
+                              .withOpacity(0.6),
+                          blurRadius: 8)
+                    ]))
+          ]),
+          Row(children: [
+            _iconBtn(Icons.history, AppColors.accentBlue, () {
+              _vibrate(duration: 20);
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const LogsScreen()));
+            }),
+            const SizedBox(width: 10),
+            _iconBtn(Icons.checklist_rtl, Colors.purpleAccent, () async {
+              _vibrate(duration: 20);
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SeasonSettingsScreen()));
+              _loadLocalData();
+            }),
+            const SizedBox(width: 10),
+            _iconBtn(Icons.settings, AppColors.textMain, () async {
+              _vibrate(duration: 20);
+              await Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              _loadLocalData();
+            }),
+          ])
+        ]),
+        const SizedBox(height: 25),
+        Container(
+          decoration: BoxDecoration(
+              color: AppColors.bg,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.shadowTop,
+                    offset: const Offset(-3, -3),
+                    blurRadius: 6),
+                BoxShadow(
+                    color: AppColors.shadowBottom,
+                    offset: const Offset(3, 3),
+                    blurRadius: 6)
               ]),
-              Row(children: [
-                _iconBtn(Icons.history, AppColors.accentBlue, () {
-                  _vibrate(duration: 20);
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const LogsScreen()));
-                }),
-                const SizedBox(width: 15),
-                _iconBtn(Icons.settings, AppColors.textMain, () async {
-                  _vibrate(duration: 20);
-                  await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const SettingsScreen()));
-                  _loadLocalData();
-                }),
-              ])
-            ],
+          child: TextField(
+            onChanged: (val) {
+              _searchQuery = val;
+              _applyFilters();
+            },
+            style: TextStyle(color: AppColors.textMain, fontSize: 18),
+            decoration: InputDecoration(
+                hintText: "Пошук...",
+                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.7)),
+                prefixIcon:
+                    Icon(Icons.search, color: AppColors.accentBlue, size: 26),
+                border: InputBorder.none,
+                filled: false,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 18, horizontal: 20)),
           ),
-          const SizedBox(height: 25),
-          Container(
-            decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppColors.shadowTop,
-                      offset: const Offset(-3, -3),
-                      blurRadius: 6),
-                  BoxShadow(
-                      color: AppColors.shadowBottom,
-                      offset: const Offset(3, 3),
-                      blurRadius: 6),
-                ]),
-            child: TextField(
-              onChanged: (val) {
-                _searchQuery = val;
-                _applyFilters();
-              },
-              style: TextStyle(color: AppColors.textMain, fontSize: 18),
-              decoration: InputDecoration(
-                  hintText: "Пошук...",
-                  hintStyle: TextStyle(color: Colors.grey.withOpacity(0.7)),
-                  prefixIcon:
-                      Icon(Icons.search, color: AppColors.accentBlue, size: 26),
-                  border: InputBorder.none,
-                  filled: false,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 18, horizontal: 20)),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 
+  // 🔥 ФИЛЬТРЫ: Все -> Склад 1 -> Склад 2 -> Остальные
   Widget _buildFilterRow() {
     final config = UserConfig();
     return Container(
@@ -466,11 +373,25 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          // 1. Все
           _chip("Все"),
           const SizedBox(width: 12),
-          _chip("Склад 1", config.wh1Name),
+
+          // 2. Склад 1 (ООС)
+          _chip("Склад 1", config.wh1Name, Icons.store, Colors.blueAccent),
           const SizedBox(width: 12),
-          _chip("Склад 2", config.wh2Name)
+
+          // 3. Склад 2 (ППД)
+          _chip("Склад 2", config.wh2Name, Icons.store_mall_directory,
+              Colors.indigoAccent),
+          const SizedBox(width: 12),
+
+          // 4. Остальные (Зима, Лето, Инвентарь)
+          _chip("Зима", null, Icons.ac_unit, Colors.cyan),
+          const SizedBox(width: 12),
+          _chip("Літо", null, Icons.wb_sunny, Colors.orange),
+          const SizedBox(width: 12),
+          _chip("Видача", "Інвентар", Icons.handyman, Colors.purple),
         ]),
       ),
     );
@@ -478,29 +399,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _iconBtn(IconData icon, Color col, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 45,
-        height: 45,
-        decoration: BoxDecoration(
-            color: AppColors.bg,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.shadowTop,
-                  offset: const Offset(-3, -3),
-                  blurRadius: 5),
-              BoxShadow(
-                  color: AppColors.shadowBottom,
-                  offset: const Offset(3, 3),
-                  blurRadius: 5),
-            ]),
-        child: Icon(icon, color: col, size: 24),
-      ),
-    );
+        onTap: onTap,
+        child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+                color: AppColors.bg,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.shadowTop,
+                      offset: const Offset(-3, -3),
+                      blurRadius: 5),
+                  BoxShadow(
+                      color: AppColors.shadowBottom,
+                      offset: const Offset(3, 3),
+                      blurRadius: 5)
+                ]),
+            child: Icon(icon, color: col, size: 22)));
   }
 
-  Widget _chip(String key, [String? label]) {
+  Widget _chip(String key, [String? label, IconData? icon, Color? iconColor]) {
     bool active = _activeFilter == key;
     return GestureDetector(
       onTap: () {
@@ -529,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppColors.shadowBottom,
                         offset: const Offset(-2, -2),
                         blurRadius: 3,
-                        spreadRadius: -2),
+                        spreadRadius: -2)
                   ]
                 : [
                     BoxShadow(
@@ -541,13 +460,58 @@ class _HomeScreenState extends State<HomeScreen> {
                         offset: const Offset(3, 3),
                         blurRadius: 5)
                   ]),
-        child: Text(label ?? key,
-            style: TextStyle(
-                color: active ? AppColors.accent : Colors.grey,
-                fontWeight: FontWeight.bold,
-                fontSize: 16)),
+        child: Row(children: [
+          if (icon != null) ...[
+            Icon(icon,
+                size: 16,
+                color: active ? AppColors.accent : (iconColor ?? Colors.grey)),
+            const SizedBox(width: 6)
+          ],
+          Text(label ?? key,
+              style: TextStyle(
+                  color: active ? AppColors.accent : Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16)),
+        ]),
       ),
     );
+  }
+
+  Widget _buildCategoryBadge(String category) {
+    String cleanCat = category.trim().toUpperCase();
+    if (cleanCat.isEmpty || cleanCat == "NULL") return const SizedBox.shrink();
+    String label = "I";
+    Color color = Colors.cyanAccent;
+    if (cleanCat.contains("II") || cleanCat.contains("2")) {
+      label = "II";
+      color = Colors.orangeAccent;
+    }
+    return Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withOpacity(0.5), width: 1)),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.bold, fontSize: 12)));
+  }
+
+  Widget _buildInventoryBadge() {
+    return Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+            color: Colors.purpleAccent.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+                color: Colors.purpleAccent.withOpacity(0.5), width: 1)),
+        child: const Text("ІНВЕНТАР",
+            style: TextStyle(
+                color: Colors.purpleAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 10)));
   }
 
   Widget _itemCard(Map<String, dynamic> item) {
@@ -556,36 +520,25 @@ class _HomeScreenState extends State<HomeScreen> {
     String name = item['name'] ?? "No Name";
     String cat = item['category'] ?? "";
     String wh = item['warehouse'] ?? "";
-
     var rawIsInv = item['is_inventory'];
     bool flagCheck =
         (rawIsInv == 1) || (rawIsInv == true) || (rawIsInv.toString() == "1");
-    String typeStr = (item['item_type'] ?? item['type'] ?? "").toString();
-    bool typeCheck = typeStr == "Інвентар";
-    bool isInventory = flagCheck || typeCheck;
-
+    bool isInventory = flagCheck || (item['item_type'] == "Інвентар");
     String rawDate = item['date_added']?.toString() ?? "";
     String date = (rawDate.length >= 10) ? rawDate.substring(0, 10) : rawDate;
-
     IconData typeIcon = isInventory ? Icons.handyman : Icons.checkroom;
     Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
-
-    // Формируем подзаголовок (Только склад, так как категория теперь значком)
-    String subTitle = wh;
 
     return Dismissible(
       key: ValueKey(item['local_id']),
       direction: DismissDirection.endToStart,
       background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white, size: 30),
-      ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+              color: Colors.red, borderRadius: BorderRadius.circular(24)),
+          child: const Icon(Icons.delete, color: Colors.white, size: 30)),
       confirmDismiss: (dir) async {
         _vibrate(duration: 50);
         await _deleteItem(item['local_id'], item['server_id']);
@@ -617,112 +570,84 @@ class _HomeScreenState extends State<HomeScreen> {
               border: expanded
                   ? Border.all(color: typeColor.withOpacity(0.5), width: 1.5)
                   : null),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                // ИКОНКА СЛЕВА
-                Container(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
                   margin: const EdgeInsets.only(right: 12),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                       color: typeColor.withOpacity(0.1),
                       shape: BoxShape.circle),
-                  child: Icon(typeIcon, color: typeColor, size: 24),
-                ),
-
-                // ЦЕНТРАЛЬНАЯ ЧАСТЬ
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      // НАЗВАНИЕ
-                      Text(name,
-                          style: TextStyle(
-                              color: AppColors.textMain,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 6),
-
-                      // РЯД: [КАТЕГОРИЯ] + [МЕСТО]
-                      Row(
-                        children: [
-                          // 🔥 ИСПРАВЛЕНИЕ: Показываем категорию ВСЕГДА
-                          _buildCategoryBadge(cat),
-
-                          Icon(Icons.place, size: 12, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(subTitle,
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold))
-                        ],
-                      )
-                    ])),
-
-                // КОЛИЧЕСТВО
-                Container(
-                    width: 50,
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: AppColors.bg,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: AppColors.shadowTop,
-                              offset: const Offset(-3, -3),
-                              blurRadius: 5),
-                          BoxShadow(
-                              color: AppColors.shadowBottom,
-                              offset: const Offset(3, 3),
-                              blurRadius: 5)
-                        ]),
-                    child: Text("$total",
+                  child: Icon(typeIcon, color: typeColor, size: 24)),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(name,
                         style: TextStyle(
-                            color: typeColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18))),
-              ]),
-              if (expanded) ...[
-                const SizedBox(height: 20),
-                Divider(color: Colors.grey.withOpacity(0.2)),
-                const SizedBox(height: 15),
-                _controlPanel(item, total, isInventory),
-                const SizedBox(height: 15),
-                Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  const Icon(Icons.calendar_today,
-                      size: 12, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(date,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12))
-                ])
-              ]
-            ],
-          ),
+                            color: AppColors.textMain,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      if (isInventory) _buildInventoryBadge(),
+                      _buildCategoryBadge(cat),
+                      Icon(Icons.place, size: 12, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(wh,
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold))
+                    ])
+                  ])),
+              Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: AppColors.bg,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                            color: AppColors.shadowTop,
+                            offset: const Offset(-3, -3),
+                            blurRadius: 5),
+                        BoxShadow(
+                            color: AppColors.shadowBottom,
+                            offset: const Offset(3, 3),
+                            blurRadius: 5)
+                      ]),
+                  child: Text("$total",
+                      style: TextStyle(
+                          color: typeColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18))),
+            ]),
+            if (expanded) ...[
+              const SizedBox(height: 20),
+              Divider(color: Colors.grey.withOpacity(0.2)),
+              const SizedBox(height: 15),
+              _controlPanel(item, total, isInventory),
+              const SizedBox(height: 15),
+              Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(date,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12))
+              ])
+            ]
+          ]),
         ),
       ),
     );
   }
 
-  Widget _badge(String txt, Color col) {
-    if (txt.isEmpty) return const SizedBox.shrink();
-    return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-            color: col.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12)),
-        child: Text(txt,
-            style: TextStyle(
-                color: col, fontSize: 12, fontWeight: FontWeight.bold)));
-  }
-
   Widget _controlPanel(Map<String, dynamic> item, int total, bool isInventory) {
     Map<String, dynamic> sizes = item['size_data'] ?? {};
-
     if (sizes.isEmpty) {
       return _verticalStyleCard(
           label: "Загальна кількість",
@@ -734,117 +659,79 @@ class _HomeScreenState extends State<HomeScreen> {
           isInv: isInventory,
           icon: isInventory ? Icons.build : Icons.checkroom);
     }
-
     if (sizes.length == 1) {
       String key = sizes.keys.first;
       int val = int.tryParse(sizes[key].toString()) ?? 0;
-      String label = key;
-      String subLabel = "";
-      String normalizedKey = key.replaceAll("/", "-");
-      if (normalizedKey.contains("-")) {
-        var parts = normalizedKey.split("-");
-        label = parts[0];
-        if (parts.length > 1) subLabel = "Зріст ${parts[1]}";
-      }
-
       return _verticalStyleCard(
-        label: label,
-        subLabel: subLabel,
-        val: val,
-        onMinus: () => _updateQuantity(item, key, -1),
-        onPlus: () => _updateQuantity(item, key, 1),
-        onMinusLong: () => _showBulkDialog(item, key, false),
-        onPlusLong: () => _showBulkDialog(item, key, true),
-        isInv: isInventory,
-      );
+          label: key,
+          val: val,
+          onMinus: () => _updateQuantity(item, key, -1),
+          onPlus: () => _updateQuantity(item, key, 1),
+          onMinusLong: () => _showBulkDialog(item, key, false),
+          onPlusLong: () => _showBulkDialog(item, key, true),
+          isInv: isInventory);
     }
-
     return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.5,
-          crossAxisSpacing: 15,
-          mainAxisSpacing: 15),
-      itemCount: sizes.length,
-      itemBuilder: (ctx, i) {
-        String key = sizes.keys.elementAt(i);
-        int val = int.tryParse(sizes[key].toString()) ?? 0;
-        String label = key;
-        String subLabel = "";
-        String normalizedKey = key.replaceAll("/", "-");
-        if (normalizedKey.contains("-")) {
-          var parts = normalizedKey.split("-");
-          label = parts[0];
-          if (parts.length > 1) subLabel = "Зріст ${parts[1]}";
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-              color: AppColors.bg,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: AppColors.shadowTop,
-                    offset: const Offset(-2, -2),
-                    blurRadius: 4),
-                BoxShadow(
-                    color: AppColors.shadowBottom,
-                    offset: const Offset(2, 2),
-                    blurRadius: 4)
-              ]),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            if (subLabel.isNotEmpty)
-              Column(children: [
-                Text(label,
-                    style: TextStyle(
-                        color: AppColors.textMain,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
-                Text(subLabel,
-                    style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold)),
-              ])
-            else
-              Text(label,
-                  style: TextStyle(
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16)),
-            const SizedBox(height: 5),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              _bigBtn(Icons.remove, () => _updateQuantity(item, key, -1),
-                  () => _showBulkDialog(item, key, false), isInventory,
-                  small: true),
-              Text("$val",
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 1.5,
+            crossAxisSpacing: 15,
+            mainAxisSpacing: 15),
+        itemCount: sizes.length,
+        itemBuilder: (ctx, i) {
+          String key = sizes.keys.elementAt(i);
+          int val = int.tryParse(sizes[key].toString()) ?? 0;
+          return Container(
+            decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.shadowTop,
+                      offset: const Offset(-2, -2),
+                      blurRadius: 4),
+                  BoxShadow(
+                      color: AppColors.shadowBottom,
+                      offset: const Offset(2, 2),
+                      blurRadius: 4)
+                ]),
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text(key,
                   style: TextStyle(
                       color: AppColors.textMain,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              _bigBtn(Icons.add, () => _updateQuantity(item, key, 1),
-                  () => _showBulkDialog(item, key, true), isInventory,
-                  small: true),
-            ])
-          ]),
-        );
-      },
-    );
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
+              const SizedBox(height: 5),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                _bigBtn(Icons.remove, () => _updateQuantity(item, key, -1),
+                    () => _showBulkDialog(item, key, false), isInventory,
+                    small: true),
+                Text("$val",
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                _bigBtn(Icons.add, () => _updateQuantity(item, key, 1),
+                    () => _showBulkDialog(item, key, true), isInventory,
+                    small: true)
+              ])
+            ]),
+          );
+        });
   }
 
-  Widget _verticalStyleCard({
-    required String label,
-    String subLabel = "",
-    required int val,
-    required VoidCallback onMinus,
-    required VoidCallback onPlus,
-    required VoidCallback onMinusLong,
-    required VoidCallback onPlusLong,
-    required bool isInv,
-    IconData? icon,
-  }) {
+  Widget _verticalStyleCard(
+      {required String label,
+      required int val,
+      required VoidCallback onMinus,
+      required VoidCallback onPlus,
+      required VoidCallback onMinusLong,
+      required VoidCallback onPlusLong,
+      required bool isInv,
+      IconData? icon}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -861,52 +748,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 offset: const Offset(3, 3),
                 blurRadius: 6)
           ]),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: Colors.grey, size: 24),
-                const SizedBox(width: 8)
-              ],
-              if (subLabel.isNotEmpty)
-                Column(children: [
-                  Text(label,
-                      style: TextStyle(
-                          color: AppColors.textMain,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20)),
-                  Text(subLabel,
-                      style: TextStyle(
-                          color: isInv ? Colors.purple : AppColors.accentBlue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
-                ])
-              else
-                Text(label,
-                    style: TextStyle(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _bigBtn(Icons.remove, onMinus, onMinusLong, isInv),
-              Text("$val",
-                  style: TextStyle(
-                      color: AppColors.textMain,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold)),
-              _bigBtn(Icons.add, onPlus, onPlusLong, isInv),
-            ],
-          )
-        ],
-      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          if (icon != null) ...[
+            Icon(icon, color: Colors.grey, size: 24),
+            const SizedBox(width: 8)
+          ],
+          Text(label,
+              style: TextStyle(
+                  color: AppColors.textMain,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20))
+        ]),
+        const SizedBox(height: 20),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+          _bigBtn(Icons.remove, onMinus, onMinusLong, isInv),
+          Text("$val",
+              style: TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold)),
+          _bigBtn(Icons.add, onPlus, onPlusLong, isInv)
+        ])
+      ]),
     );
   }
 
@@ -914,61 +778,152 @@ class _HomeScreenState extends State<HomeScreen> {
       IconData icon, VoidCallback onTap, VoidCallback onLongPress, bool isInv,
       {bool small = false}) {
     double size = small ? 40 : 55;
-    Color activeColor = isInv ? Colors.purple : AppColors.accent;
     return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-            color: AppColors.bg,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.shadowBottom,
-                  offset: const Offset(4, 4),
-                  blurRadius: 6),
-              BoxShadow(
-                  color: AppColors.shadowTop,
-                  offset: const Offset(-4, -4),
-                  blurRadius: 6)
-            ]),
-        child: Icon(icon, color: activeColor, size: size * 0.5),
-      ),
-    );
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+                color: AppColors.bg,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.shadowBottom,
+                      offset: const Offset(4, 4),
+                      blurRadius: 6),
+                  BoxShadow(
+                      color: AppColors.shadowTop,
+                      offset: const Offset(-4, -4),
+                      blurRadius: 6)
+                ]),
+            child: Icon(icon,
+                color: isInv ? Colors.purple : AppColors.accent,
+                size: size * 0.5)));
+  }
+
+  void _showBulkDialog(Map<String, dynamic> item, String? sizeKey, bool isAdd) {
+    _vibrate(duration: 30);
+    TextEditingController qtyCtrl = TextEditingController();
+    String title = isAdd ? "Додати кількість" : "Відняти кількість";
+    showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.bg,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24)),
+                title: Text(title, style: TextStyle(color: AppColors.textMain)),
+                content: Container(
+                    decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                              color: AppColors.shadowTop,
+                              offset: const Offset(2, 2),
+                              blurRadius: 3,
+                              spreadRadius: -2),
+                          BoxShadow(
+                              color: AppColors.shadowBottom,
+                              offset: const Offset(-2, -2),
+                              blurRadius: 3,
+                              spreadRadius: -2)
+                        ]),
+                    child: TextField(
+                        controller: qtyCtrl,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        style: TextStyle(
+                            color: AppColors.textMain,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        decoration: const InputDecoration(
+                            hintText: "Введіть число",
+                            hintStyle: TextStyle(color: Colors.grey),
+                            filled: false,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 15)))),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Відміна",
+                          style: TextStyle(color: Colors.grey))),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16))),
+                      onPressed: () {
+                        _vibrate(duration: 60);
+                        int val = int.tryParse(qtyCtrl.text) ?? 0;
+                        if (val > 0) {
+                          int delta = isAdd ? val : -val;
+                          _updateQuantity(item, sizeKey, delta);
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text("ОК",
+                          style: TextStyle(color: Colors.white)))
+                ]));
+  }
+
+  Future<void> _deleteItem(int localId, int? serverId) async {
+    _vibrate(duration: 50);
+    bool confirm = await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.bg,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: Text("Видалити?",
+                    style: TextStyle(color: AppColors.textMain)),
+                content: Text("Цей запис буде переміщено в архів (видалено).",
+                    style: TextStyle(color: Colors.grey)),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text("Ні", style: TextStyle(color: Colors.grey))),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text("Так", style: TextStyle(color: Colors.red)))
+                ]));
+    if (confirm) {
+      _vibrate(duration: 100);
+      final db = await DBService().localDb;
+      await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
+          where: 'local_id = ?', whereArgs: [localId]);
+      await DBService()
+          .logHistory("Товар ID $localId", "Видалено", "Переміщено в архів");
+      _loadLocalData();
+      DBService().syncWithCloud();
+    }
   }
 }
 
 class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   _StickyFilterDelegate({required this.child});
-
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      decoration: BoxDecoration(
-          color: AppColors.bg,
-          boxShadow: overlapsContent
-              ? [
-                  const BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 4))
-                ]
-              : null),
-      child: child,
-    );
-  }
-
+          BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      Container(
+          decoration: BoxDecoration(
+              color: AppColors.bg,
+              boxShadow: overlapsContent
+                  ? [
+                      const BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 4))
+                    ]
+                  : null),
+          child: child);
   @override
   double get maxExtent => 70;
-
   @override
   double get minExtent => 70;
-
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
       true;
