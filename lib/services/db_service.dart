@@ -13,7 +13,7 @@ class DBService {
   Database? _localDb;
   PostgreSQLConnection? _pgConnection;
 
-  // БЛОКИРОВКА СИНХРОНИЗАЦИИ
+  // БЛОКИРОВКА СИНХРОНИЗАЦИИ (чтобы не запускать две сразу)
   bool _isSyncActive = false;
 
   // ==========================================
@@ -28,8 +28,8 @@ class DBService {
 
   Future<Database> _initLocalDB() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    // 🔥 v16 - чтобы создалась новая таблица для списков
-    String path = join(documentsDirectory.path, "inventory_system_v16.db");
+    // 🔥 v17 - Новая версия для поддержки истории с ID
+    String path = join(documentsDirectory.path, "inventory_system_v17.db");
 
     return await openDatabase(path, version: 1, onCreate: (db, version) async {
       // 1. Таблица товаров
@@ -55,10 +55,11 @@ class DBService {
       await db.execute("CREATE INDEX idx_server_id ON items(server_id)");
       await db.execute("CREATE INDEX idx_uid ON items(uid)");
 
-      // 2. Таблица логов
+      // 2. Таблица логов (С поддержкой item_id)
       await db.execute('''
         CREATE TABLE logs (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          item_id INTEGER, 
           item_name TEXT,
           action_type TEXT,
           details TEXT,
@@ -68,10 +69,10 @@ class DBService {
         )
       ''');
 
-      // 3. 🔥 НОВАЯ ТАБЛИЦА: СПИСКИ (Зима/Лето/Инвентарь)
+      // 3. Таблица списков
       await db.execute('''
         CREATE TABLE custom_lists (
-          list_type TEXT, -- 'winter', 'summer', 'inventory'
+          list_type TEXT,
           item_name TEXT,
           PRIMARY KEY (list_type, item_name)
         )
@@ -80,7 +81,7 @@ class DBService {
   }
 
   // ==========================================
-  // 📝 МЕТОДЫ ДЛЯ СПИСКОВ (Зима/Лето)
+  // 📝 МЕТОДЫ ДЛЯ СПИСКОВ
   // ==========================================
 
   Future<void> toggleItemInList(
@@ -112,7 +113,6 @@ class DBService {
     if (_pgConnection != null && !_pgConnection!.isClosed) return true;
 
     try {
-      print("🔄 Подключение к Supabase...");
       final settings = PostgreSQLConnection(
           'aws-1-eu-west-1.pooler.supabase.com', 5432, 'postgres',
           username: 'postgres.qzgatfjezjzqshqpuejh',
@@ -123,7 +123,6 @@ class DBService {
 
       await settings.open();
       _pgConnection = settings;
-      print("✅ Успешное подключение к Supabase");
       return true;
     } catch (e) {
       print("❌ Ошибка подключения (Cloud): $e");
@@ -137,11 +136,7 @@ class DBService {
   // ==========================================
 
   Future<void> syncWithCloud() async {
-    if (_isSyncActive) {
-      print("⏳ Синхронизация уже идет...");
-      return;
-    }
-
+    if (_isSyncActive) return;
     _isSyncActive = true;
 
     try {
@@ -320,12 +315,12 @@ class DBService {
   }
 
   // ==========================================
-  // CRUD МЕТОДЫ (Добавить/Удалить/Логи)
+  // 🔥 CRUD + LOGS (МАТЕМАТИКА ИСТОРИИ)
   // ==========================================
 
   Future<void> saveItem(Map<String, dynamic> item) async {
     final db = await localDb;
-    await db.insert('items', {
+    int id = await db.insert('items', {
       'uid': item['uid'],
       'name': item['name'],
       'location': item['location'],
@@ -339,15 +334,18 @@ class DBService {
       'is_unsynced': 1,
       'is_deleted': 0
     });
-    // 🔥 Запись в лог (теперь работает)
-    await logHistory("Додано", item['name'], "К-сть: ${item['total']}");
+
+    await logHistory(
+        "Додано", item['name'], "Початкова к-сть: ${item['total']}",
+        itemId: id);
     syncWithCloud();
   }
 
-  // 🔥 ПУБЛИЧНЫЙ МЕТОД ИСТОРИИ (Был потерян, теперь на месте)
-  Future<void> logHistory(String action, String name, String details) async {
+  Future<void> logHistory(String action, String name, String details,
+      {int? itemId}) async {
     final db = await localDb;
     await db.insert('logs', {
+      'item_id': itemId,
       'item_name': name,
       'action_type': action,
       'details': details,
@@ -357,14 +355,22 @@ class DBService {
     });
   }
 
-  // Обертка для старого кода, если где-то используется
-  Future<void> _addLog(String type, String name, String details) async {
-    await logHistory(type, name, details);
-  }
-
+  // 🔥 ОБНОВЛЕНИЕ РАЗМЕРОВ С ПОДСЧЕТОМ
   Future<void> updateItemSizes(int localId, String name, String category,
       Map<String, dynamic> newSizes, int newTotal) async {
     final db = await localDb;
+
+    // 1. Узнаем старое количество
+    int oldTotal = 0;
+    var res = await db.query('items',
+        columns: ['total_quantity'],
+        where: 'local_id = ?',
+        whereArgs: [localId]);
+    if (res.isNotEmpty) {
+      oldTotal = res.first['total_quantity'] as int;
+    }
+
+    // 2. Обновляем
     await db.update(
         'items',
         {
@@ -375,26 +381,74 @@ class DBService {
         where: 'local_id = ?',
         whereArgs: [localId]);
 
+    // 3. Пишем красивый лог
+    String arrow =
+        newTotal > oldTotal ? "🟢" : (newTotal < oldTotal ? "🔴" : "⚪");
+    await logHistory(
+        "Зміна (розміри)", name, "$arrow Залишок: $oldTotal ➡️ $newTotal",
+        itemId: localId);
     syncWithCloud();
   }
 
+  // 🔥 ОБНОВЛЕНИЕ КОЛИЧЕСТВА С ПОДСЧЕТОМ
   Future<void> updateItemQuantity(int localId, int newTotal) async {
     final db = await localDb;
+
+    // 1. Узнаем, сколько БЫЛО
+    int oldTotal = 0;
+    String name = "Товар";
+    var res = await db.query('items',
+        columns: ['total_quantity', 'name'],
+        where: 'local_id = ?',
+        whereArgs: [localId]);
+    if (res.isNotEmpty) {
+      oldTotal = res.first['total_quantity'] as int;
+      name = (res.first['name'] ?? "Товар") as String;
+    }
+
+    // 2. Обновляем
     await db.update('items', {'total_quantity': newTotal, 'is_unsynced': 1},
         where: 'local_id = ?', whereArgs: [localId]);
+
+    // 3. Лог
+    String arrow =
+        newTotal > oldTotal ? "🟢" : (newTotal < oldTotal ? "🔴" : "⚪");
+    await logHistory(
+        "Зміна к-сті", name, "$arrow Було: $oldTotal ➡️ Стало: $newTotal",
+        itemId: localId);
     syncWithCloud();
   }
 
+  // 🔥 УДАЛЕНИЕ
   Future<void> deleteItem(int localId) async {
     final db = await localDb;
+
+    // 1. Узнаем имя и кол-во перед удалением
+    int oldTotal = 0;
+    String name = "Товар";
+    var res = await db.query('items',
+        columns: ['total_quantity', 'name'],
+        where: 'local_id = ?',
+        whereArgs: [localId]);
+    if (res.isNotEmpty) {
+      oldTotal = res.first['total_quantity'] as int;
+      name = (res.first['name'] ?? "Товар") as String;
+    }
+
+    // 2. Помечаем удаленным
     await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
         where: 'local_id = ?', whereArgs: [localId]);
 
-    await logHistory("Видалення", "ID: $localId", "Видалено з телефону");
+    // 3. Лог
+    await logHistory(
+        "Видалення", name, "🗑️ Видалено (На залишку було: $oldTotal шт.)",
+        itemId: localId);
     syncWithCloud();
   }
 
+  // 🔥 ПОЛУЧЕНИЕ ИСТОРИИ (УМНЫЙ JOIN)
   Future<List<Map<String, dynamic>>> getLogs() async {
+    // Если есть интернет - с сервера
     if (await initConnection()) {
       try {
         final res = await _pgConnection!.mappedResultsQuery(
@@ -404,8 +458,22 @@ class DBService {
         print(e);
       }
     }
+
+    // Если интернета нет - локально соединяем таблицы
     final db = await localDb;
-    return await db.query('logs', orderBy: "id DESC");
+    return await db.rawQuery('''
+      SELECT 
+        h.id, 
+        h.action_type, 
+        h.details, 
+        h.timestamp, 
+        h.device,
+        h.item_id,
+        COALESCE(i.name, h.item_name) as item_name
+      FROM logs h
+      LEFT JOIN items i ON h.item_id = i.local_id
+      ORDER BY h.id DESC
+    ''');
   }
 
   Future<void> clearLogs() async {
