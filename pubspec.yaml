@@ -33,7 +33,7 @@ dependencies:
   # --- СТАНДАРТНЫЕ ИКОНКИ ---
   cupertino_icons: ^1.0.6
   path_provider: ^2.1.5
-  sqflite_common_ffi: ^2.4.0+2
+  sqflite_common_ffi: ^2.3.2+1
   vibration: ^3.1.5
 
 dev_dependencies:
