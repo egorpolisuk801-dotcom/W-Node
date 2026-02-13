@@ -10,6 +10,7 @@ import 'add_universal_screen.dart';
 import 'settings_screen.dart';
 import 'logs_screen.dart';
 import 'season_settings_screen.dart';
+import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,8 +48,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _vibrate({int duration = 50}) async {
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: duration);
+    // На iOS используем нативный отклик (Haptic Feedback)
+    // Это те самые четкие щелчки iPhone
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      HapticFeedback.lightImpact();
+    } else {
+      // Для Android оставляем обычную вибрацию
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: duration);
+      }
     }
   }
 
