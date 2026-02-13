@@ -18,24 +18,25 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.19.0'
           cache: true
 
       - name: Get Dependencies
         run: |
           flutter pub get
-          flutter clean
+          # Генерируем конфигурации iOS, чтобы избежать ошибки "Invalid Podfile"
+          flutter build ios --config-only --no-codesign
 
       - name: Install CocoaPods
         run: |
           cd ios
-          # Удаляем старые зависимости, если они есть, и ставим заново
           rm -rf Pods
           rm -rf Podfile.lock
           pod install --repo-update
           cd ..
 
       - name: Build iOS App (No Codesign)
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --verbose
 
       - name: Create IPA
         run: |
