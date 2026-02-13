@@ -18,13 +18,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.22.2'
+          flutter-version: '3.22.2' 
           cache: true
 
       - name: Get Dependencies
         run: |
           flutter pub get
-          # Генерируем конфиги iOS, чтобы избежать ошибки "Invalid Podfile"
+          # Генерируем конфиги iOS, чтобы избежать ошибки Invalid Podfile
           flutter build ios --config-only --no-codesign
 
       - name: Install CocoaPods

@@ -11,16 +11,23 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # --- ПЛАГИНЫ СВЯЗИ И ПУШЕЙ ---
   connectivity_plus: ^6.0.3
   flutter_local_notifications: ^17.1.0
+
+  # --- АНИМАЦИИ ---
   flutter_animate: ^4.5.0
+
+  # --- БАЗА ДАННЫХ (ОБЛАКО) ---
   postgres: ^2.6.1
 
-  # Исправленные версии для стабильной работы на Dart 3.4.0
+  # --- БАЗА ДАННЫХ (ОФЛАЙН) ---
+  # Установлены версии, совместимые с Dart 3.4.0
   sqflite: ^2.3.3+1
   sqflite_common_ffi: ^2.3.3
   path: any 
 
+  # --- УТИЛИТЫ ---
   shared_preferences: ^2.2.2
   intl: ^0.19.0
   cupertino_icons: ^1.0.6
@@ -37,6 +44,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+# --- ИКОНКА ПРИЛОЖЕНИЯ ---
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
