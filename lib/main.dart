@@ -8,7 +8,7 @@ import 'core/user_config.dart';
 import 'services/db_service.dart';
 import 'core/notification_helper.dart';
 
-// ВЕРНУЛИ ИМПОРТ ТВОЕГО ИСПРАВЛЕННОГО SPLASH SCREEN
+// 🔥 ВЕРНУЛИ ИМПОРТ ТВОЕЙ НАСТОЯЩЕЙ ЗАСТАВКИ 🔥
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -114,6 +114,7 @@ class _WNodeAppState extends State<WNodeApp> {
           primary: primaryColor,
           secondary: secondaryColor,
           surface: cardColor,
+          // ignore: deprecated_member_use
           background: bgColor,
         ),
         cardTheme: CardThemeData(
@@ -124,7 +125,7 @@ class _WNodeAppState extends State<WNodeApp> {
           ),
         ),
       ),
-      // ВОТ ОНА! НАША ИСПРАВЛЕННАЯ ЗАСТАВКА
+      // 🔥 СТАВИМ ТВОЙ ИСТИННЫЙ SPLASH SCREEN 🔥
       home: const SplashScreen(),
     );
   }
