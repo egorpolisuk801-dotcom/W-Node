@@ -40,20 +40,34 @@ class _SplashScreenState extends State<SplashScreen>
     // Запускаем анимацию
     _controller.forward();
 
-    // 4. Запускаем инициализацию базы данных в фоне
-    _initData();
+    // 4. Запускаем безопасную инициализацию
+    _safeInit();
   }
 
-  Future<void> _initData() async {
-    // Тут мы реально подключаемся к базе, пока идет анимация
-    await DBService().initConnection();
+  Future<void> _safeInit() async {
+    try {
+      // Гарантируем, что заставка провисит минимум 3 секунды для красоты
+      final minDisplayTime = Future.delayed(const Duration(seconds: 3));
 
-    // Ждем минимум 3 секунды, чтобы юзер успел насладиться красотой
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    });
+      // Инициализируем БД с жестким таймаутом в 5 секунд (БЕЗ красной ошибки)
+      // Если пройдет 5 секунд, он сам выбросит ошибку, и мы поймаем её в catch
+      final dbInit =
+          DBService().initConnection().timeout(const Duration(seconds: 5));
+
+      // Ждем, пока пройдут 3 секунды И подключится база
+      await Future.wait([minDisplayTime, dbInit]);
+    } catch (e) {
+      // Если база выдала ошибку (нет сети) или сработал таймаут, просто пишем в лог
+      debugPrint("⚠️ Ошибка или таймаут в Splash Screen: $e");
+    } finally {
+      // ЖЕЛЕЗОБЕТОННЫЙ ПЕРЕХОД НА ГЛАВНЫЙ ЭКРАН
+      // Выполнится в любом случае, даже если база упала!
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    }
   }
 
   @override
@@ -78,57 +92,58 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _opacityAnimation.value,
                   child: Transform.scale(
                     scale: _scaleAnimation.value,
-                    child: Container(
-                      padding: const EdgeInsets.all(30),
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.bg,
-                          boxShadow: [
-                            // Внешнее свечение (ВАУ эффект)
-                            BoxShadow(
-                              color: AppColors.accent.withOpacity(0.6),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                            // Внутреннее свечение
-                            BoxShadow(
-                              color: AppColors.accentBlue.withOpacity(0.4),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                              offset: const Offset(0, 0),
-                            ),
-                          ],
-                          border: Border.all(
-                              color: AppColors.accent.withOpacity(0.5),
-                              width: 2)),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.qr_code_scanner,
-                              size: 80, color: AppColors.textMain),
-                          const SizedBox(height: 10),
-                          Text(
-                            "W-NODE",
-                            style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textMain,
-                                letterSpacing: 5,
-                                shadows: [
-                                  Shadow(
-                                      color: AppColors.accent, blurRadius: 15),
-                                ]),
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: child, // Вынесли Container в child для плавности
                   ),
                 );
               },
+              child: Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.bg,
+                  boxShadow: [
+                    // Внешнее свечение (ВАУ эффект)
+                    BoxShadow(
+                      color: AppColors.accent.withOpacity(0.6),
+                      blurRadius: 40,
+                      spreadRadius: 10,
+                    ),
+                    // Внутреннее свечение
+                    BoxShadow(
+                      color: AppColors.accentBlue.withOpacity(0.4),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.qr_code_scanner,
+                        size: 80, color: AppColors.textMain),
+                    const SizedBox(height: 10),
+                    Text(
+                      "W-NODE",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMain,
+                        letterSpacing: 5,
+                        shadows: [
+                          Shadow(color: AppColors.accent, blurRadius: 15),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-
             const SizedBox(height: 50),
-
             // Индикатор загрузки
             SizedBox(
               width: 200,
@@ -142,10 +157,11 @@ class _SplashScreenState extends State<SplashScreen>
             Text(
               "INITIALIZING SYSTEM...",
               style: TextStyle(
-                  color: AppColors.accentBlue,
-                  fontSize: 12,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.bold),
+                color: AppColors.accentBlue,
+                fontSize: 12,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold,
+              ),
             )
           ],
         ),

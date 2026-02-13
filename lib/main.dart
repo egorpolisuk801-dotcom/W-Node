@@ -8,8 +8,8 @@ import 'core/user_config.dart';
 import 'services/db_service.dart';
 import 'core/notification_helper.dart';
 
-// ВРЕМЕННО ОТКЛЮЧИЛИ ТВОЙ SPLASH SCREEN ДЛЯ ПРОВЕРКИ
-// import 'screens/splash_screen.dart';
+// ВЕРНУЛИ ИМПОРТ ТВОЕГО ИСПРАВЛЕННОГО SPLASH SCREEN
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,10 +64,20 @@ class _WNodeAppState extends State<WNodeApp> {
 
           _scaffoldKey.currentState?.showSnackBar(
             const SnackBar(
-              content: Text('✅ Связь восстановлена!'),
+              content: Text(
+                '✅ Связь восстановлена. Склад синхронизирован!',
+                style:
+                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
               backgroundColor: Color(0xFF00E676),
               duration: Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
             ),
+          );
+
+          NotificationHelper.showSystemPush(
+            'W-Node: Связь восстановлена',
+            'Офлайн-данные успешно отправлены на склад.',
           );
         } catch (e) {
           debugPrint("❌ Ошибка синхронизации: $e");
@@ -84,31 +94,38 @@ class _WNodeAppState extends State<WNodeApp> {
 
   @override
   Widget build(BuildContext context) {
+    // ВЕРНУЛИ ТВОЮ ПАЛИТРУ
+    const primaryColor = Color(0xFF00E676);
+    const secondaryColor = Color(0xFF00B0FF);
+    const bgColor = Color(0xFF121212);
+    const cardColor = Color(0xFF1E1E1E);
+
     return MaterialApp(
       scaffoldMessengerKey: _scaffoldKey,
+      title: 'W-Node',
       debugShowCheckedModeBanner: false,
-      // СТАВИМ ЗАГЛУШКУ ВМЕСТО ТВОЕГО SPLASH SCREEN
-      home: const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: Color(0xFF00E676)),
-              SizedBox(height: 20),
-              Text(
-                "W-NODE SYSTEM BOOT...",
-                style: TextStyle(
-                  color: Color(0xFF00E676),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: bgColor,
+        primaryColor: primaryColor,
+        useMaterial3: true,
+        colorScheme: const ColorScheme.dark(
+          primary: primaryColor,
+          secondary: secondaryColor,
+          surface: cardColor,
+          background: bgColor,
+        ),
+        cardTheme: CardThemeData(
+          color: cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
           ),
         ),
       ),
+      // ВОТ ОНА! НАША ИСПРАВЛЕННАЯ ЗАСТАВКА
+      home: const SplashScreen(),
     );
   }
 }
