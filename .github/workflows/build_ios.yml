@@ -18,13 +18,15 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.19.0'
+          # Поднимаем версию до 3.19.0 или выше, чтобы Dart SDK был >= 3.10.0
+          flutter-version: '3.19.0' 
           cache: true
 
       - name: Get Dependencies
         run: |
+          # Принудительно чистим кэш и получаем пакеты
           flutter pub get
-          # Генерируем конфигурации iOS, чтобы избежать ошибки "Invalid Podfile"
+          # Генерируем конфигурации iOS
           flutter build ios --config-only --no-codesign
 
       - name: Install CocoaPods
