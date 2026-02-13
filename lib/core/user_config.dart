@@ -1,55 +1,66 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 
 class UserConfig {
   static final UserConfig _instance = UserConfig._internal();
   factory UserConfig() => _instance;
   UserConfig._internal();
 
-  late SharedPreferences _prefs;
+  // 🛡 Убрали late, сделали prefs nullable
+  SharedPreferences? _prefs;
 
   Future<void> load() async {
-    _prefs = await SharedPreferences.getInstance();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      debugPrint("✅ SharedPreferences успешно загружены");
+    } catch (e) {
+      debugPrint("❌ Ошибка загрузки SharedPreferences: $e");
+    }
+  }
+
+  // Вспомогательный метод, чтобы не дублировать проверку
+  T _getValue<T>(String key, T defaultValue) {
+    if (_prefs == null) return defaultValue;
+    final value = _prefs!.get(key);
+    if (value == null) return defaultValue;
+    return value as T;
   }
 
   // === НАСТРОЙКИ СЕРВЕРА ===
   String get dbHost =>
-      _prefs.getString('db_host') ?? 'aws-1-eu-west-1.pooler.supabase.com';
-  String get dbUser =>
-      _prefs.getString('db_user') ?? 'postgres.qzgatfjezjzqshqpuejh';
-  String get dbPass => _prefs.getString('db_pass') ?? 'EgorPolisuk0711';
-  String get dbName => _prefs.getString('db_name') ?? 'postgres';
+      _getValue('db_host', 'aws-1-eu-west-1.pooler.supabase.com');
+  String get dbUser => _getValue('db_user', 'postgres.qzgatfjezjzqshqpuejh');
+  String get dbPass => _getValue('db_pass', 'EgorPolisuk0711');
+  String get dbName => _getValue('db_name', 'postgres');
 
   // === СКЛАДЫ ===
-  String get wh1Name => _prefs.getString('wh1_name') ?? 'Склад-1';
-  String get wh2Name => _prefs.getString('wh2_name') ?? 'Склад-2';
+  String get wh1Name => _getValue('wh1_name', 'Склад-1');
+  String get wh2Name => _getValue('wh2_name', 'Склад-2');
 
-  bool get isDarkMode => _prefs.getBool('is_dark_mode') ?? true;
+  bool get isDarkMode => _getValue('is_dark_mode', true);
 
-  // === ВИДИМОСТЬ КАТЕГОРИЙ (ВЕЩИ) ===
-  bool get itemShowDigits => _prefs.getBool('show_digits') ?? true;
-  bool get itemShowLetters => _prefs.getBool('show_letters') ?? true;
-  bool get itemShowShoes => _prefs.getBool('show_shoes') ?? true;
-  bool get itemShowHats => _prefs.getBool('show_hats') ?? true;
-  bool get itemShowHatsR => _prefs.getBool('show_hats_r') ?? true;
-  bool get itemShowGloves => _prefs.getBool('show_gloves') ?? true;
+  // === ВИДИМОСТЬ КАТЕГОРИЙ ===
+  bool get itemShowDigits => _getValue('show_digits', true);
+  bool get itemShowLetters => _getValue('show_letters', true);
+  bool get itemShowShoes => _getValue('show_shoes', true);
+  bool get itemShowHats => _getValue('show_hats', true);
+  bool get itemShowHatsR => _getValue('show_hats_r', true);
+  bool get itemShowGloves => _getValue('show_gloves', true);
+  bool get itemShowHatsW => _getValue('show_hats_w', true);
+  bool get itemShowGlovesSL => _getValue('show_gloves_sl', true);
+  bool get itemShowLinen => _getValue('show_linen', true);
 
-  // 🔥 НОВЫЕ СЕТКИ
-  bool get itemShowHatsW => _prefs.getBool('show_hats_w') ?? true; // Широкие
-  bool get itemShowGlovesSL => _prefs.getBool('show_gloves_sl') ?? true; // S-XL
-  bool get itemShowLinen => _prefs.getBool('show_linen') ?? true; // Белье
+  bool get invShowDigits => _getValue('inv_digits', true);
+  bool get invShowLetters => _getValue('inv_letters', true);
+  bool get invShowShoes => _getValue('inv_shoes', true);
+  bool get invShowRanges => _getValue('inv_ranges', true);
 
-  // === ВИДИМОСТЬ КАТЕГОРИЙ (ИНВЕНТАРЬ) ===
-  bool get invShowDigits => _prefs.getBool('inv_digits') ?? true;
-  bool get invShowLetters => _prefs.getBool('inv_letters') ?? true;
-  bool get invShowShoes => _prefs.getBool('inv_shoes') ?? true;
-  bool get invShowRanges => _prefs.getBool('inv_ranges') ?? true;
+  // === МЕТОДЫ СОХРАНЕНИЯ ===
+  Future<void> setString(String key, String value) async =>
+      await _prefs?.setString(key, value);
+  Future<void> setBool(String key, bool value) async =>
+      await _prefs?.setBool(key, value);
 
-  // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-  Future<void> setString(String key, String value) =>
-      _prefs.setString(key, value);
-  Future<void> setBool(String key, bool value) => _prefs.setBool(key, value);
-
-  // === ГЛАВНОЕ СОХРАНЕНИЕ ===
   Future<void> save({
     required String host,
     required String user,
@@ -58,54 +69,41 @@ class UserConfig {
     required String w1,
     required String w2,
     required bool darkMode,
-
-    // Вещи (Старые)
     bool iDig = true,
     bool iLet = true,
     bool iShoe = true,
     bool iHat = true,
     bool iHatR = true,
     bool iGlov = true,
-
-    // 🔥 Вещи (Новые)
     bool iHatW = true,
     bool iGlovSL = true,
     bool iLinen = true,
-
-    // Инвентарь
     bool invLet = true,
     bool invDig = true,
     bool invShoe = true,
     bool invRng = true,
   }) async {
-    // 1. Сервер
-    await _prefs.setString('db_host', host);
-    await _prefs.setString('db_user', user);
-    await _prefs.setString('db_pass', pass);
-    await _prefs.setString('db_name', dbname);
+    if (_prefs == null) await load();
 
-    // 2. Склады и Тема
-    await _prefs.setString('wh1_name', w1);
-    await _prefs.setString('wh2_name', w2);
-    await _prefs.setBool('is_dark_mode', darkMode);
-
-    // 3. Видимость (Вещи)
-    await _prefs.setBool('show_digits', iDig);
-    await _prefs.setBool('show_letters', iLet);
-    await _prefs.setBool('show_shoes', iShoe);
-    await _prefs.setBool('show_hats', iHat);
-    await _prefs.setBool('show_hats_r', iHatR);
-    await _prefs.setBool('show_gloves', iGlov);
-
-    // 🔥 Сохраняем новые
-    await _prefs.setBool('show_hats_w', iHatW);
-    await _prefs.setBool('show_gloves_sl', iGlovSL);
-    await _prefs.setBool('show_linen', iLinen);
-
-    // 4. Видимость (Инвентарь)
-    await _prefs.setBool('inv_letters', invLet);
-    await _prefs.setBool('inv_digits', invDig);
-    await _prefs.setBool('inv_shoes', invShoe);
-    await _prefs.setBool('inv_ranges', invRng);
+    await _prefs?.setString('db_host', host);
+    await _prefs?.setString('db_user', user);
+    await _prefs?.setString('db_pass', pass);
+    await _prefs?.setString('db_name', dbname);
+    await _prefs?.setString('wh1_name', w1);
+    await _prefs?.setString('wh2_name', w2);
+    await _prefs?.setBool('is_dark_mode', darkMode);
+    await _prefs?.setBool('show_digits', iDig);
+    await _prefs?.setBool('show_letters', iLet);
+    await _prefs?.setBool('show_shoes', iShoe);
+    await _prefs?.setBool('show_hats', iHat);
+    await _prefs?.setBool('show_hats_r', iHatR);
+    await _prefs?.setBool('show_gloves', iGlov);
+    await _prefs?.setBool('show_hats_w', iHatW);
+    await _prefs?.setBool('show_gloves_sl', iGlovSL);
+    await _prefs?.setBool('show_linen', iLinen);
+    await _prefs?.setBool('inv_letters', invLet);
+    await _prefs?.setBool('inv_digits', invDig);
+    await _prefs?.setBool('inv_shoes', invShoe);
+    await _prefs?.setBool('inv_ranges', invRng);
   }
 }
