@@ -24,6 +24,7 @@ jobs:
       - name: Get Dependencies
         run: |
           flutter pub get
+          # Генерируем конфиги iOS, чтобы избежать ошибки "Invalid Podfile"
           flutter build ios --config-only --no-codesign
 
       - name: Install CocoaPods
