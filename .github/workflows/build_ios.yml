@@ -18,7 +18,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true # Ускорит последующие сборки
+          cache: true
 
       - name: Get Dependencies
         run: |
@@ -28,6 +28,9 @@ jobs:
       - name: Install CocoaPods
         run: |
           cd ios
+          # Удаляем старые зависимости, если они есть, и ставим заново
+          rm -rf Pods
+          rm -rf Podfile.lock
           pod install --repo-update
           cd ..
 
