@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // 🔥 ДОБАВИЛИ АНИМАЦИИ
 import 'package:vibration/vibration.dart';
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
@@ -165,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 🔥 ИСПРАВЛЕННАЯ ЛОГИКА ФИЛЬТРАЦИИ
-  // Теперь проверяем по ID, чтобы не путать одинаковые имена
   void _applyFilters() {
     setState(() {
       _filteredItems = _items.where((item) {
@@ -188,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
         String wh2 = config.wh2Name.toUpperCase();
 
         if (_activeFilter == "Зима") {
-          // ⚠️ ВАЖНО: Проверяем наличие ID в списке, а не Имени
           matchFilter = _winterSet.contains(itemId);
         } else if (_activeFilter == "Літо") {
           matchFilter = _summerSet.contains(itemId);
@@ -217,7 +216,13 @@ class _HomeScreenState extends State<HomeScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(child: _buildHeader()),
+              // 🔥 АНИМАЦИЯ ШАПКИ
+              SliverToBoxAdapter(
+                child: _buildHeader()
+                    .animate()
+                    .fade(duration: 500.ms)
+                    .slideY(begin: -0.2, curve: Curves.easeOutExpo),
+              ),
               SliverPersistentHeader(
                   pinned: true,
                   delegate: _StickyFilterDelegate(child: _buildFilterRow())),
@@ -242,7 +247,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 15, 20, 100),
                   sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                          (ctx, i) => _itemCard(_filteredItems[i]),
+                          (ctx, i) => _itemCard(_filteredItems[i])
+                              // 🔥 КАСКАДНАЯ АНИМАЦИЯ СПИСКА
+                              .animate(
+                                  delay: (i.clamp(0, 10) * 40)
+                                      .ms) // Задержка для каждого следующего элемента
+                              .fade(duration: 300.ms) // Плавное проявление
+                              .slideY(
+                                  begin: 0.1,
+                                  duration: 300.ms,
+                                  curve: Curves.easeOutQuad), // Выезд снизу
                           childCount: _filteredItems.length)),
                 ),
             ],
@@ -363,7 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔥 ФИЛЬТРЫ: Все -> Склад 1 -> Склад 2 -> Остальные
   Widget _buildFilterRow() {
     final config = UserConfig();
     return Container(
@@ -373,20 +386,13 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          // 1. Все
           _chip("Все"),
           const SizedBox(width: 12),
-
-          // 2. Склад 1 (ООС)
           _chip("Склад 1", config.wh1Name, Icons.store, Colors.blueAccent),
           const SizedBox(width: 12),
-
-          // 3. Склад 2 (ППД)
           _chip("Склад 2", config.wh2Name, Icons.store_mall_directory,
               Colors.indigoAccent),
           const SizedBox(width: 12),
-
-          // 4. Остальные (Зима, Лето, Инвентарь)
           _chip("Зима", null, Icons.ac_unit, Colors.cyan),
           const SizedBox(width: 12),
           _chip("Літо", null, Icons.wb_sunny, Colors.orange),
@@ -530,9 +536,17 @@ class _HomeScreenState extends State<HomeScreen> {
     Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
 
     return Dismissible(
-      key: ValueKey(item['local_id']),
-      direction: DismissDirection.endToStart,
+      key: ValueKey("${item['local_id']}_dismiss"),
+      direction: DismissDirection.horizontal,
       background: Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.only(left: 20),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+              color: AppColors.accentBlue,
+              borderRadius: BorderRadius.circular(24)),
+          child: const Icon(Icons.menu_open, color: Colors.white, size: 30)),
+      secondaryBackground: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           margin: const EdgeInsets.only(bottom: 20),
@@ -540,8 +554,15 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.red, borderRadius: BorderRadius.circular(24)),
           child: const Icon(Icons.delete, color: Colors.white, size: 30)),
       confirmDismiss: (dir) async {
-        _vibrate(duration: 50);
-        await _deleteItem(item['local_id'], item['server_id']);
+        if (dir == DismissDirection.endToStart) {
+          _vibrate(duration: 50);
+          await _deleteItem(item['local_id'], item['server_id']);
+          return false;
+        } else if (dir == DismissDirection.startToEnd) {
+          _vibrate(duration: 20);
+          _showQuickActionMenu(item);
+          return false;
+        }
         return false;
       },
       child: GestureDetector(
@@ -589,7 +610,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: AppColors.textMain,
                             fontSize: 18,
                             fontWeight: FontWeight.bold),
-                        maxLines: 1,
+                        maxLines: 3,
+                        softWrap: true,
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
                     Row(children: [
@@ -597,11 +619,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildCategoryBadge(cat),
                       Icon(Icons.place, size: 12, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text(wh,
-                          style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold))
+                      Flexible(
+                        child: Text(wh,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
+                      )
                     ])
                   ])),
               Container(
@@ -899,6 +925,115 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadLocalData();
       DBService().syncWithCloud();
     }
+  }
+
+  void _showQuickActionMenu(Map<String, dynamic> item) {
+    String itemIdStr = item['id'].toString();
+
+    bool isWinter = _winterSet.contains(itemIdStr);
+    bool isSummer = _summerSet.contains(itemIdStr);
+    bool isInv = _invSet.contains(itemIdStr);
+
+    showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => StatefulBuilder(
+                builder: (BuildContext context, StateSetter setModalState) {
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(30)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: AppColors.shadowTop,
+                          blurRadius: 10,
+                          offset: const Offset(0, -5))
+                    ]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                            color: Colors.grey[700],
+                            borderRadius: BorderRadius.circular(10))),
+                    const SizedBox(height: 20),
+                    Text("Швидкі дії",
+                        style: TextStyle(
+                            color: AppColors.textMain,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    _quickActionTile(
+                        icon: Icons.ac_unit,
+                        title: isWinter ? "Прибрати із Зими" : "Додати в Зиму",
+                        isActive: isWinter,
+                        color: Colors.cyan,
+                        onTap: () async {
+                          _vibrate(duration: 20);
+                          await DBService()
+                              .toggleItemInList('winter', itemIdStr, !isWinter);
+                          setModalState(() => isWinter = !isWinter);
+                          _loadLocalData();
+                        }),
+                    _quickActionTile(
+                        icon: Icons.wb_sunny,
+                        title: isSummer ? "Прибрати з Літа" : "Додати в Літо",
+                        isActive: isSummer,
+                        color: Colors.orange,
+                        onTap: () async {
+                          _vibrate(duration: 20);
+                          await DBService()
+                              .toggleItemInList('summer', itemIdStr, !isSummer);
+                          setModalState(() => isSummer = !isSummer);
+                          _loadLocalData();
+                        }),
+                    _quickActionTile(
+                        icon: Icons.handyman,
+                        title: isInv ? "Прибрати з Видачі" : "Додати у Видачу",
+                        isActive: isInv,
+                        color: Colors.purple,
+                        onTap: () async {
+                          _vibrate(duration: 20);
+                          await DBService()
+                              .toggleItemInList('inventory', itemIdStr, !isInv);
+                          setModalState(() => isInv = !isInv);
+                          _loadLocalData();
+                        }),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              );
+            }));
+  }
+
+  Widget _quickActionTile(
+      {required IconData icon,
+      required String title,
+      required bool isActive,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      decoration: BoxDecoration(
+        color: isActive ? color.withOpacity(0.1) : AppColors.bg,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: isActive ? color : Colors.grey),
+        title: Text(title,
+            style: TextStyle(
+                color: isActive ? color : Colors.grey,
+                fontWeight: FontWeight.bold)),
+        trailing: isActive
+            ? Icon(Icons.check_circle, color: color)
+            : const Icon(Icons.circle_outlined, color: Colors.grey),
+      ),
+    );
   }
 }
 

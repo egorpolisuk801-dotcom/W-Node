@@ -68,7 +68,13 @@ class LocalDB {
 
   Future<int> updateItem(int id, Map<String, dynamic> item) async {
     final db = await database;
-    return await db.update('items', item, where: 'id = ?', whereArgs: [id]);
+
+    // --- ИЗМЕНЕНО: Принудительно ставим метку, что товар изменен офлайн ---
+    Map<String, dynamic> updatedItem = Map<String, dynamic>.from(item);
+    updatedItem['is_unsynced'] = 1;
+
+    return await db
+        .update('items', updatedItem, where: 'id = ?', whereArgs: [id]);
   }
 
   // Найти товар по серверному ID (чтобы обновить его)
