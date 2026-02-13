@@ -1,6 +1,5 @@
-// 🔥 ПРИНУДИТЕЛЬНЫЙ СТАРТ ФИНАЛЬНОЙ СБОРКИ (iOS ПОБЕЖДЕНА) 🔥
+// 🔥 ФИНАЛЬНЫЙ СТАРТ: iOS БЕЗ БЛОКИРОВОК 🔥
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -8,101 +7,48 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'core/user_config.dart';
 import 'services/db_service.dart';
 import 'core/notification_helper.dart';
-
-// 🔥 ВЕРНУЛИ ИМПОРТ ТВОЕЙ НАСТОЯЩЕЙ ЗАСТАВКИ 🔥
 import 'screens/splash_screen.dart';
 
 void main() async {
+  // 1. Инициализация привязок Flutter
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. СРАЗУ запускаем UI, не дожидаясь конфигов
   runApp(const WNodeApp());
+
+  // 3. Запускаем сервисы в фоновом режиме
   _initServicesInBackground();
 }
 
 Future<void> _initServicesInBackground() async {
   try {
+    // Устанавливаем стиль статус-бара сразу
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
 
-    await NotificationHelper.initSystemNotifications();
-    final config = UserConfig();
-    await config.load();
+    // Запускаем всё без await в цепочке, чтобы один сбой не вешал другие
+    NotificationHelper.initSystemNotifications()
+        .catchError((e) => debugPrint("🔔 Push error: $e"));
+    UserConfig().load().catchError((e) => debugPrint("⚙️ Config error: $e"));
 
-    debugPrint("✅ Фоновые сервисы запущены");
+    debugPrint("✅ Фоновые процессы инициированы");
   } catch (e) {
-    debugPrint("⚠️ Ошибка: $e");
+    debugPrint("⚠️ Критическая ошибка инициализации: $e");
   }
 }
 
-class WNodeApp extends StatefulWidget {
+class WNodeApp extends StatelessWidget {
   const WNodeApp({super.key});
 
   @override
-  State<WNodeApp> createState() => _WNodeAppState();
-}
-
-class _WNodeAppState extends State<WNodeApp> {
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      _initConnectivityListener();
-    });
-  }
-
-  void _initConnectivityListener() {
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> results) async {
-      if (results.isNotEmpty && !results.contains(ConnectivityResult.none)) {
-        try {
-          await DBService().syncWithCloud();
-
-          _scaffoldKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text(
-                '✅ Связь восстановлена. Склад синхронизирован!',
-                style:
-                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: Color(0xFF00E676),
-              duration: Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
-          NotificationHelper.showSystemPush(
-            'W-Node: Связь восстановлена',
-            'Офлайн-данные успешно отправлены на склад.',
-          );
-        } catch (e) {
-          debugPrint("❌ Ошибка синхронизации: $e");
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // ВЕРНУЛИ ТВОЮ ПАЛИТРУ
     const primaryColor = Color(0xFF00E676);
     const secondaryColor = Color(0xFF00B0FF);
     const bgColor = Color(0xFF121212);
-    const cardColor = Color(0xFF1E1E1E);
 
     return MaterialApp(
-      scaffoldMessengerKey: _scaffoldKey,
       title: 'W-Node',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
@@ -114,19 +60,10 @@ class _WNodeAppState extends State<WNodeApp> {
         colorScheme: const ColorScheme.dark(
           primary: primaryColor,
           secondary: secondaryColor,
-          surface: cardColor,
-          // ignore: deprecated_member_use
-          background: bgColor,
-        ),
-        cardTheme: CardThemeData(
-          color: cardColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
-          ),
+          surface: Color(0xFF1E1E1E),
         ),
       ),
-      // 🔥 СТАВИМ ТВОЙ ИСТИННЫЙ SPLASH SCREEN 🔥
+      // Сразу открываем заставку
       home: const SplashScreen(),
     );
   }
