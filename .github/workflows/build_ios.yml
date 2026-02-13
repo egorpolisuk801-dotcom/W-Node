@@ -18,26 +18,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.22.2'
           cache: true
 
       - name: Get Dependencies
-        run: |
-          flutter clean
-          flutter pub get
-          flutter build ios --config-only --no-codesign
-
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          # Удаляем старое, если оно было
-          rm -rf Pods
-          rm -rf Podfile.lock
-          pod install --repo-update
-          cd ..
+        run: flutter pub get
 
       - name: Build iOS App (No Codesign)
-        run: flutter build ios --release --no-codesign --verbose
+        run: flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |

@@ -1,7 +1,6 @@
 name: w_node
 description: Warehouse Inventory Application
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -11,41 +10,30 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # --- ПЛАГИНЫ СВЯЗИ И ПУШЕЙ ---
-  connectivity_plus: ^6.0.3
-  flutter_local_notifications: ^17.1.0
-
-  # --- АНИМАЦИИ ---
+  connectivity_plus: ^6.1.5
+  flutter_local_notifications: ^17.2.4
   flutter_animate: ^4.5.0
+  postgres: ^2.6.4 # Как в твоем успешном логе
 
-  # --- БАЗА ДАННЫХ (ОБЛАКО) ---
-  postgres: ^2.6.1
-
-  # --- БАЗА ДАННЫХ (ОФЛАЙН) ---
-  # Версии подобраны под Dart 3.4.0, который сейчас на GitHub
-  sqflite: ^2.3.3+1
-  sqflite_common_ffi: ^2.3.3
-  # Использование 'any' решает конфликт с flutter_test (1.8.3 vs 1.9.0)
+  sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.0
   path: any 
 
-  # --- УТИЛИТЫ ---
   shared_preferences: ^2.2.2
-  intl: ^0.19.0
+  intl: 0.19.0
   cupertino_icons: ^1.0.6
   path_provider: ^2.1.2
-  vibration: ^3.1.5
+  vibration: 3.1.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
-  flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: 3.0.2
+  flutter_launcher_icons: 0.13.1
 
 flutter:
   uses-material-design: true
 
-# --- ИКОНКА ПРИЛОЖЕНИЯ ---
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
