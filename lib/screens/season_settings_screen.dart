@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../services/db_service.dart';
+import 'norms_settings_screen.dart'; // 🔥 ІМПОРТ ЕКРАНУ НОРМ ВИДАЧІ
 
 class SeasonSettingsScreen extends StatefulWidget {
   const SeasonSettingsScreen({super.key});
@@ -15,7 +16,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
   List<Map<String, dynamic>> _allItems = [];
   List<Map<String, dynamic>> _filteredItems = [];
 
-  // Списки теперь хранят ID (в виде строки), а не Имена
   Set<String> _winterList = {};
   Set<String> _summerList = {};
   Set<String> _invList = {};
@@ -26,13 +26,19 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
+
     _loadData();
   }
 
   Future<void> _loadData() async {
     final items = await DBService().getAllItems();
 
-    // Загружаем сохраненные списки (ожидаем, что там теперь будут ID)
     final w = await DBService().getCustomList('winter');
     final s = await DBService().getCustomList('summer');
     final i = await DBService().getCustomList('inventory');
@@ -64,7 +70,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
       String listType, String itemId, bool currentVal) async {
     bool newVal = !currentVal;
 
-    // Обновляем визуально сразу
     setState(() {
       if (listType == 'winter') {
         newVal ? _winterList.add(itemId) : _winterList.remove(itemId);
@@ -75,17 +80,15 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
       }
     });
 
-    // Сохраняем в базу ID вместо Имени
     await DBService().toggleItemInList(listType, itemId, newVal);
   }
 
   @override
   Widget build(BuildContext context) {
-    // ЦВЕТОВАЯ ПАЛИТРА (CYBERPUNK)
     const bgColor = Color(0xFF121212);
     const cardColor = Color(0xFF1E1E1E);
-    const primaryColor = Color(0xFF00E676); // Зеленый неон
-    const accentColor = Color(0xFF00B0FF); // Синий неон
+    const primaryColor = Color(0xFF00E676);
+    const accentColor = Color(0xFF00B0FF);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -99,6 +102,19 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
+        // 🔥 КНОПКА ПЕРЕХОДУ В НОРМИ ВИДАЧІ
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune, color: primaryColor, size: 28),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const NormsSettingsScreen()),
+              );
+            },
+          )
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: primaryColor,
@@ -115,7 +131,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
       ),
       body: Column(
         children: [
-          // ПОИСК
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Container(
@@ -135,7 +150,7 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
                 decoration: InputDecoration(
                   hintText: "Пошук...",
                   hintStyle: TextStyle(color: Colors.grey[600]),
-                  prefixIcon: Icon(Icons.search, color: accentColor),
+                  prefixIcon: const Icon(Icons.search, color: accentColor),
                   border: InputBorder.none,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -143,8 +158,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
               ),
             ),
           ),
-
-          // СПИСОК
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -168,23 +181,19 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: _filteredItems.length,
       itemBuilder: (ctx, i) {
         final item = _filteredItems[i];
 
-        // 🔥 ВАЖНО: Используем ID для идентификации
         final String itemId = item['id'].toString();
-
         final name = item['name'] ?? "Без назви";
         final warehouse =
             (item['warehouse'] ?? "Не вказано").toString().toUpperCase();
         final category = item['category'] ?? "";
 
-        // Проверяем по ID
         final isChecked = activeSet.contains(itemId);
 
-        // Цвет склада
         Color whColor = Colors.grey;
         if (warehouse.contains("ООС")) whColor = const Color(0xFF00E676);
         if (warehouse.contains("ППД")) whColor = const Color(0xFF2979FF);
@@ -217,7 +226,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
             ),
             child: Row(
               children: [
-                // ЧЕКБОКС
                 Container(
                   width: 28,
                   height: 28,
@@ -233,8 +241,6 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
                       : null,
                 ),
                 const SizedBox(width: 16),
-
-                // ИНФО
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

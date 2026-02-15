@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'dart:convert'; // 🔥 ДОДАНО ДЛЯ БЕЗПЕЧНОГО ПАРСИНГУ
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // 🔥 ДОБАВИЛИ АНИМАЦИИ
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:vibration/vibration.dart';
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
@@ -10,6 +11,7 @@ import 'add_universal_screen.dart';
 import 'settings_screen.dart';
 import 'logs_screen.dart';
 import 'season_settings_screen.dart';
+import 'calculator_screen.dart';
 import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -48,12 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _vibrate({int duration = 50}) async {
-    // На iOS используем нативный отклик (Haptic Feedback)
-    // Это те самые четкие щелчки iPhone
     if (Theme.of(context).platform == TargetPlatform.iOS) {
       HapticFeedback.lightImpact();
     } else {
-      // Для Android оставляем обычную вибрацию
       if (await Vibration.hasVibrator() ?? false) {
         Vibration.vibrate(duration: duration);
       }
@@ -85,11 +84,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 🔥 БРОНЬОВАНИЙ ПАРСЕР РОЗМІРІВ ДЛЯ ЗАХИСТУ ВІД ВИЛЬОТІВ
+  Map<String, dynamic> _parseSizeSafe(dynamic data) {
+    if (data == null) return {};
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is String) {
+      try {
+        return Map<String, dynamic>.from(jsonDecode(data));
+      } catch (_) {
+        return {};
+      }
+    }
+    return {};
+  }
+
   Future<void> _loadLocalData() async {
     try {
       final data = await DBService().getAllItems();
-
-      // Загружаем списки (ожидаем ID товаров)
       final w = await DBService().getCustomList('winter');
       final s = await DBService().getCustomList('summer');
       final i = await DBService().getCustomList('inventory');
@@ -134,7 +145,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
     _vibrate(duration: 40);
-    Map<String, dynamic> newSizes = Map.from(item['size_data'] ?? {});
+
+    // 🔥 Використовуємо безпечний парсер замість простого Map.from
+    Map<String, dynamic> newSizes = _parseSizeSafe(item['size_data']);
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
 
     if (sizeKey != null) {
@@ -151,13 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
       item['total'] = next;
     }
     item['size_data'] = newSizes;
-    setState(() {});
+    setState(() {}); // Оновлюємо UI миттєво
 
     String actionName = item['name'];
     String sizeInfo = sizeKey != null ? " ($sizeKey)" : "";
     String sign = delta > 0 ? "+" : "";
     _showNotification("$actionName$sizeInfo $sign$delta", delta > 0);
 
+    // Зберігаємо у фоні
     Future.delayed(Duration.zero, () async {
       try {
         await DBService().updateItemSizes(item['id'], item['name'],
@@ -168,20 +182,18 @@ class _HomeScreenState extends State<HomeScreen> {
         await DBService().logHistory(
             item['name'], delta > 0 ? "Додано" : "Вилучено", details);
       } catch (e) {
-        _loadLocalData();
+        // 🔥 Прибрали виклик _loadLocalData() при помилці, щоб не викликати нескінченний цикл
+        if (mounted) _showNotification("Помилка збереження", false);
       }
     });
   }
 
-  // 🔥 ИСПРАВЛЕННАЯ ЛОГИКА ФИЛЬТРАЦИИ
   void _applyFilters() {
     setState(() {
       _filteredItems = _items.where((item) {
         final name = (item['name'] ?? "").toString();
-        // Получаем ID товара для точной проверки в списках
         final String itemId = item['id'].toString();
 
-        // Поиск по имени и категории
         final searchParams = name.toLowerCase() +
             (item['category'] ?? "").toString().toLowerCase();
         final search = _searchQuery.toLowerCase();
@@ -190,7 +202,6 @@ class _HomeScreenState extends State<HomeScreen> {
         bool matchFilter = true;
         final config = UserConfig();
 
-        // Данные склада
         String itemWh = (item['warehouse'] ?? "").toString().toUpperCase();
         String wh1 = config.wh1Name.toUpperCase();
         String wh2 = config.wh2Name.toUpperCase();
@@ -214,6 +225,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isSeasonActive = _activeFilter == "Зима" ||
+        _activeFilter == "Літо" ||
+        _activeFilter == "Видача";
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -224,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // 🔥 АНИМАЦИЯ ШАПКИ
               SliverToBoxAdapter(
                 child: _buildHeader()
                     .animate()
@@ -256,32 +270,67 @@ class _HomeScreenState extends State<HomeScreen> {
                   sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                           (ctx, i) => _itemCard(_filteredItems[i])
-                              // 🔥 КАСКАДНАЯ АНИМАЦИЯ СПИСКА
-                              .animate(
-                                  delay: (i.clamp(0, 10) * 40)
-                                      .ms) // Задержка для каждого следующего элемента
-                              .fade(duration: 300.ms) // Плавное проявление
+                              .animate(delay: (i.clamp(0, 10) * 40).ms)
+                              .fade(duration: 300.ms)
                               .slideY(
                                   begin: 0.1,
                                   duration: 300.ms,
-                                  curve: Curves.easeOutQuad), // Выезд снизу
+                                  curve: Curves.easeOutQuad),
                           childCount: _filteredItems.length)),
                 ),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.accent,
-        elevation: 10,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
-        onPressed: () async {
-          _vibrate(duration: 50);
-          final res = await Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const AddUniversalScreen()));
-          if (res == true) _loadLocalData();
-        },
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isSeasonActive) ...[
+            FloatingActionButton.extended(
+              heroTag: "calc_btn",
+              backgroundColor: const Color(0xFF00E676),
+              icon: const Icon(Icons.analytics_outlined,
+                  color: Color(0xFF121212)),
+              label: const Text("АНАЛІЗ КОМПЛЕКТАЦІЇ",
+                  style: TextStyle(
+                      color: Color(0xFF121212), fontWeight: FontWeight.bold)),
+              onPressed: () {
+                _vibrate(duration: 30);
+                String sKey = _activeFilter == 'Зима'
+                    ? 'winter'
+                    : (_activeFilter == 'Літо' ? 'summer' : 'inventory');
+                String sName = _activeFilter.toUpperCase();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        CalculatorScreen(seasonKey: sKey, seasonName: sName),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+          FloatingActionButton(
+            heroTag: "add_btn",
+            backgroundColor: AppColors.accent,
+            elevation: 10,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: const Icon(Icons.add, color: Colors.white, size: 32),
+            onPressed: () async {
+              _vibrate(duration: 50);
+              final res = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AddUniversalScreen()));
+              if (res == true) _loadLocalData();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -625,13 +674,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(children: [
                       if (isInventory) _buildInventoryBadge(),
                       _buildCategoryBadge(cat),
-                      Icon(Icons.place, size: 12, color: Colors.grey),
+                      const Icon(Icons.place, size: 12, color: Colors.grey),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(wh,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold)),
@@ -681,7 +730,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _controlPanel(Map<String, dynamic> item, int total, bool isInventory) {
-    Map<String, dynamic> sizes = item['size_data'] ?? {};
+    // 🔥 БЕЗПЕЧНИЙ ПАРСИНГ!
+    Map<String, dynamic> sizes = _parseSizeSafe(item['size_data']);
+
     if (sizes.isEmpty) {
       return _verticalStyleCard(
           label: "Загальна кількість",
@@ -913,15 +964,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(20)),
                 title: Text("Видалити?",
                     style: TextStyle(color: AppColors.textMain)),
-                content: Text("Цей запис буде переміщено в архів (видалено).",
+                content: const Text("Цей запис буде переміщено в архів.",
                     style: TextStyle(color: Colors.grey)),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: Text("Ні", style: TextStyle(color: Colors.grey))),
+                      child: const Text("Ні",
+                          style: TextStyle(color: Colors.grey))),
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: Text("Так", style: TextStyle(color: Colors.red)))
+                      child: const Text("Так",
+                          style: TextStyle(color: Colors.red)))
                 ]));
     if (confirm) {
       _vibrate(duration: 100);
