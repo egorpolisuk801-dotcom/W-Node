@@ -20,8 +20,6 @@ class _LogsScreenState extends State<LogsScreen> {
   }
 
   Future<void> _loadLogs() async {
-    // Тут мы получаем данные.
-    // ВАЖНО: Чтобы имена появились, следующим шагом нам нужно будет обновить db_service.dart
     final logs = await DBService().getLogs();
     if (mounted) {
       setState(() {
@@ -42,15 +40,19 @@ class _LogsScreenState extends State<LogsScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: Text("Історія операцій",
+        title: Text("ІСТОРІЯ ОПЕРАЦІЙ",
             style: TextStyle(
-                color: AppColors.textMain, fontWeight: FontWeight.bold)),
+                color: AppColors.textMain,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5)),
         backgroundColor: AppColors.bg,
         elevation: 0,
+        centerTitle: true,
         iconTheme: IconThemeData(color: AppColors.textMain),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_forever, color: Colors.red),
+            icon: const Icon(Icons.delete_sweep,
+                color: Colors.redAccent, size: 28),
             onPressed: () => _showClearDialog(),
             tooltip: "Очистити історію",
           )
@@ -66,7 +68,7 @@ class _LogsScreenState extends State<LogsScreen> {
                   backgroundColor: AppColors.bg,
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
+                        horizontal: 16, vertical: 15),
                     itemCount: _logs.length,
                     itemBuilder: (ctx, i) => _buildLogCard(_logs[i]),
                   ),
@@ -74,140 +76,205 @@ class _LogsScreenState extends State<LogsScreen> {
     );
   }
 
-  // Красивая заглушка, если пусто
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.history_toggle_off,
-              size: 80, color: Colors.grey.withOpacity(0.3)),
+              size: 80, color: Colors.grey.withOpacity(0.2)),
           const SizedBox(height: 15),
-          Text("Історія порожня",
-              style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const Text("Журнал операцій порожній",
+              style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   Widget _buildLogCard(Map<String, dynamic> log) {
-    // 1. Безопасное получение данных
     String device = log['device'] ?? "Unknown";
     String details = log['details'] ?? "Без опису";
     String timestamp = log['timestamp'] ?? "";
 
-    // Если дата длинная, обрезаем секунды для красоты
+    // Перевіряємо статус синхронізації
+    bool isUnsynced = log['is_unsynced'] == 1 || log['is_unsynced'] == true;
+
     if (timestamp.length > 16) {
       timestamp = timestamp.substring(0, 16);
     }
 
-    // ЛОГИКА ИМЕНИ: Если имя есть - показываем, если нет - пишем ID
-    String itemName =
+    String fullItemName =
         log['item_name'] ?? "Товар (ID: ${log['item_id'] ?? '?'})";
-    if (itemName == "???") itemName = "Видалений товар #${log['item_id']}";
+    if (fullItemName == "???")
+      fullItemName = "Видалений товар #${log['item_id']}";
 
-    // 2. Иконка устройства
+    String itemName = fullItemName;
+    String sizeTag = "";
+    if (fullItemName.contains("(Розмір:")) {
+      var parts = fullItemName.split("(Розмір:");
+      itemName = parts[0].trim();
+      sizeTag = parts[1].replaceAll(")", "").trim();
+    }
+
     IconData deviceIcon = Icons.help_outline;
-    if (device == "PC")
+    if (device == "PC") {
       deviceIcon = Icons.computer;
-    else if (device == "Phone") deviceIcon = Icons.smartphone;
+    } else if (device == "Phone") {
+      deviceIcon = Icons.smartphone;
+    }
 
-    // 3. Определение цвета и иконки по типу действия
-    String type = log['action_type'] ?? "";
-    Color color = Colors.blue; // Стандартный цвет
-    IconData actionIcon = Icons.info;
+    String type = (log['action_type'] ?? "").toString().toLowerCase();
+    Color color = Colors.blue;
+    IconData actionIcon = Icons.info_outline;
 
-    if (type.toLowerCase().contains("додано") ||
-        type.toLowerCase().contains("створено")) {
-      color = Colors.green;
-      actionIcon = Icons.add_circle_outline;
-    } else if (type.toLowerCase().contains("видал")) {
-      color = Colors.redAccent;
-      actionIcon = Icons.delete_outline;
-    } else if (type.toLowerCase().contains("зміна") ||
-        type.toLowerCase().contains("редаг")) {
-      color = Colors.orange;
+    if (type.contains("додано") || type.contains("створено")) {
+      color = const Color(0xFF00E676);
+      actionIcon = Icons.add_circle;
+    } else if (type.contains("видал") || type.contains("вилучено")) {
+      color = const Color(0xFFFF3D00);
+      actionIcon = Icons.remove_circle;
+    } else if (type.contains("зміна") || type.contains("редаг")) {
+      color = Colors.orangeAccent;
       actionIcon = Icons.edit_note;
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.bg,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
         boxShadow: [
           BoxShadow(
               color: AppColors.shadowTop,
               offset: const Offset(-2, -2),
-              blurRadius: 5),
+              blurRadius: 4),
           BoxShadow(
               color: AppColors.shadowBottom,
-              offset: const Offset(3, 3),
-              blurRadius: 5),
+              offset: const Offset(2, 2),
+              blurRadius: 4),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            border: Border(
-                left: BorderSide(
-                    color: color, width: 5)), // Цветная полоска слева
+            border: Border(left: BorderSide(color: color, width: 6)),
           ),
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Верхняя строка: Иконка действия + Название товара
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(actionIcon, color: color, size: 24),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(actionIcon, color: color, size: 24),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(itemName,
-                        style: TextStyle(
-                            color: AppColors.textMain,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                        overflow: TextOverflow.ellipsis),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(itemName,
+                            style: TextStyle(
+                                color: AppColors.textMain,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
+                        if (sizeTag.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: color.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                    color: color.withOpacity(0.5), width: 1)),
+                            child: Text("Розмір: $sizeTag",
+                                style: TextStyle(
+                                    color: color,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          )
+                        ]
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              // Детали операции
-              Text(details,
-                  style: TextStyle(
-                      color: AppColors.textMain.withOpacity(0.8),
-                      fontSize: 14)),
+              _buildSmartDetails(details, color),
 
-              Divider(color: Colors.grey.withOpacity(0.2), height: 20),
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.withOpacity(0.2), height: 1),
+              const SizedBox(height: 12),
 
-              // Нижняя строка: Время и Устройство
+              // ПІДВАЛ (ЧАС, СТАТУС ТА ПРИСТРІЙ)
               Row(
                 children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 6),
                   Text(timestamp,
                       style: TextStyle(
-                          color: Colors.grey,
+                          color: Colors.grey[600],
                           fontSize: 12,
-                          fontWeight: FontWeight.w500)),
+                          fontWeight: FontWeight.bold)),
                   const Spacer(),
+
+                  // 🔥 ОСЬ ЦЕЙ СТАТУС СИНХРОНІЗАЦІЇ
+                  if (isUnsynced)
+                    Row(
+                      children: [
+                        const Icon(Icons.cloud_upload_outlined,
+                            size: 14, color: Colors.orangeAccent),
+                        const SizedBox(width: 4),
+                        const Text("Очікує",
+                            style: TextStyle(
+                                color: Colors.orangeAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        const Icon(Icons.cloud_done_rounded,
+                            size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        const Text("В хмарі",
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+
+                  const SizedBox(width: 12),
+
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                        color: AppColors.accent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8)),
+                        color: AppColors.accentBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: AppColors.accentBlue.withOpacity(0.3))),
                     child: Row(
                       children: [
-                        Icon(deviceIcon, size: 14, color: AppColors.accent),
+                        Icon(deviceIcon, size: 12, color: AppColors.accentBlue),
                         const SizedBox(width: 4),
                         Text(device,
                             style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.accent,
+                                fontSize: 10,
+                                color: AppColors.accentBlue,
                                 fontWeight: FontWeight.bold)),
                       ],
                     ),
@@ -221,15 +288,98 @@ class _LogsScreenState extends State<LogsScreen> {
     );
   }
 
+  Widget _buildSmartDetails(String details, Color actionColor) {
+    if (details.contains('➔')) {
+      List<String> parts = details.split('➔').map((e) => e.trim()).toList();
+
+      if (parts.length == 3) {
+        String was = parts[0].replaceAll('Було:', '').trim();
+        String delta = parts[1].trim();
+        String became = parts[2].replaceAll('Стало:', '').trim();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.05))),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("БУЛО",
+                      style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
+                  Text(was,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                    color: actionColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: actionColor.withOpacity(0.5))),
+                child: Text(delta,
+                    style: TextStyle(
+                        color: actionColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900)),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text("СТАЛО",
+                      style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
+                  Text(became,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900)),
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+    }
+    return Text(details,
+        style: TextStyle(
+            color: AppColors.textMain.withOpacity(0.8), fontSize: 14));
+  }
+
   void _showClearDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text("Очищення", style: TextStyle(color: AppColors.textMain)),
-        content: Text("Видалити всю історію операцій?",
-            style: TextStyle(color: AppColors.textMain)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+                color: Colors.redAccent.withOpacity(0.5), width: 1.5)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_rounded, color: Colors.redAccent),
+            SizedBox(width: 10),
+            Text("Очищення",
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+            "Видалити всю історію операцій? Цю дію неможливо скасувати.",
+            style: TextStyle(color: Colors.grey)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -237,13 +387,16 @@ class _LogsScreenState extends State<LogsScreen> {
                   style: TextStyle(color: Colors.grey))),
           ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red, shape: const StadiumBorder()),
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10))),
               onPressed: () {
                 Navigator.pop(ctx);
                 _clearLogs();
               },
               child: const Text("Видалити",
-                  style: TextStyle(color: Colors.white))),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold))),
         ],
       ),
     );

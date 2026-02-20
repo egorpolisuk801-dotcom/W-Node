@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert'; // 🔥 ДОДАНО ДЛЯ БЕЗПЕЧНОГО ПАРСИНГУ
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:vibration/vibration.dart';
@@ -30,13 +30,17 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isConnected = false;
 
   String _searchQuery = "";
-  String _activeFilter = "Все"; // Текущий фильтр
+  String _activeFilter = "Все";
   int? _expandedItemId;
 
-  // Списки для фильтрации (теперь хранят ID)
   Set<String> _winterSet = {};
   Set<String> _summerSet = {};
   Set<String> _invSet = {};
+
+  // 🔥 СИСТЕМА ПАМ'ЯТІ ДЛЯ ШВИДКИХ КЛІКІВ (DEBOUNCE)
+  final Map<String, Timer> _debounceTimers = {};
+  final Map<String, int> _pendingDeltas = {};
+  final Map<String, int> _initialQuantities = {};
 
   @override
   void initState() {
@@ -44,12 +48,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _initData();
   }
 
+  @override
+  void dispose() {
+    for (var timer in _debounceTimers.values) {
+      timer.cancel();
+    }
+    super.dispose();
+  }
+
   Future<void> _initData() async {
     await _loadLocalData();
     _syncData();
   }
 
-  void _vibrate({int duration = 50}) async {
+  void _vibrate({int duration = 30}) async {
     if (Theme.of(context).platform == TargetPlatform.iOS) {
       HapticFeedback.lightImpact();
     } else {
@@ -65,26 +77,28 @@ class _HomeScreenState extends State<HomeScreen> {
       SnackBar(
         content: Row(children: [
           Icon(isPositive ? Icons.check_circle : Icons.remove_circle,
-              color: Colors.white),
+              color: Colors.white, size: 24),
           const SizedBox(width: 10),
           Expanded(
               child: Text(message,
                   style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)))
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)))
         ]),
         backgroundColor: isPositive ? Colors.green[700] : Colors.red[700],
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).size.height - 200,
+            bottom: MediaQuery.of(context).size.height - 180,
             left: 20,
             right: 20),
-        duration: const Duration(milliseconds: 800),
+        duration: const Duration(milliseconds: 1000),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        elevation: 8,
       ),
     );
   }
 
-  // 🔥 БРОНЬОВАНИЙ ПАРСЕР РОЗМІРІВ ДЛЯ ЗАХИСТУ ВІД ВИЛЬОТІВ
   Map<String, dynamic> _parseSizeSafe(dynamic data) {
     if (data == null) return {};
     if (data is Map) return Map<String, dynamic>.from(data);
@@ -142,49 +156,81 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 🔥 РОЗУМНЕ ОНОВЛЕННЯ З ЗАХИСТОМ ВІД ШВИДКИХ КЛІКІВ
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
-    _vibrate(duration: 40);
+    _vibrate(duration: 30);
 
-    // 🔥 Використовуємо безпечний парсер замість простого Map.from
+    String itemKey = "${item['id']}_${sizeKey ?? 'total'}";
     Map<String, dynamic> newSizes = _parseSizeSafe(item['size_data']);
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
 
+    int cur = 0;
     if (sizeKey != null) {
-      int cur = int.tryParse(newSizes[sizeKey].toString()) ?? 0;
-      int next = cur + delta;
-      if (next < 0) return;
+      cur = int.tryParse(newSizes[sizeKey].toString()) ?? 0;
+    } else {
+      cur = currentTotal;
+    }
+
+    if (!_initialQuantities.containsKey(itemKey)) {
+      _initialQuantities[itemKey] = cur;
+    }
+
+    int next = cur + delta;
+    if (next < 0) {
+      _showNotification("Мінімум 0", false);
+      return;
+    }
+
+    if (sizeKey != null) {
       newSizes[sizeKey] = next;
       int tempTotal = 0;
       newSizes.forEach((k, v) => tempTotal += int.tryParse(v.toString()) ?? 0);
       item['total'] = tempTotal;
     } else {
-      int next = currentTotal + delta;
-      if (next < 0) return;
       item['total'] = next;
     }
     item['size_data'] = newSizes;
-    setState(() {}); // Оновлюємо UI миттєво
+    setState(() {});
+
+    _pendingDeltas[itemKey] = (_pendingDeltas[itemKey] ?? 0) + delta;
+    int accumulatedDelta = _pendingDeltas[itemKey]!;
 
     String actionName = item['name'];
     String sizeInfo = sizeKey != null ? " ($sizeKey)" : "";
-    String sign = delta > 0 ? "+" : "";
-    _showNotification("$actionName$sizeInfo $sign$delta", delta > 0);
+    String sign = accumulatedDelta > 0 ? "+" : "";
 
-    // Зберігаємо у фоні
-    Future.delayed(Duration.zero, () async {
-      try {
-        await DBService().updateItemSizes(item['id'], item['name'],
-            item['category'], newSizes, item['total']);
-        String details = sizeKey != null
-            ? "Розмір $sizeKey: $sign$delta"
-            : "Загальна к-сть: $sign$delta";
-        await DBService().logHistory(
-            item['name'], delta > 0 ? "Додано" : "Вилучено", details);
-      } catch (e) {
-        // 🔥 Прибрали виклик _loadLocalData() при помилці, щоб не викликати нескінченний цикл
-        if (mounted) _showNotification("Помилка збереження", false);
+    _showNotification(
+        "$actionName$sizeInfo $sign$accumulatedDelta", accumulatedDelta > 0);
+
+    _debounceTimers[itemKey]?.cancel();
+    _debounceTimers[itemKey] =
+        Timer(const Duration(milliseconds: 600), () async {
+      int finalDelta = _pendingDeltas[itemKey] ?? 0;
+      int initial = _initialQuantities[itemKey] ?? 0;
+      int finalValue = initial + finalDelta;
+
+      if (finalDelta != 0) {
+        String actionType = finalDelta > 0 ? "Додано" : "Видано";
+        String finalSign = finalDelta > 0 ? "+" : "-";
+        int absDelta = finalDelta.abs();
+
+        String beautifulLog =
+            "Було: $initial ➔ $finalSign$absDelta ➔ Стало: $finalValue";
+
+        try {
+          await DBService().updateItemSizes(item['id'], item['name'],
+              item['category'], newSizes, item['total']);
+          await DBService().logHistory(
+              actionType, "$actionName$sizeInfo", beautifulLog,
+              itemId: item['id']);
+        } catch (e) {
+          if (mounted) _showNotification("Помилка збереження", false);
+        }
       }
+
+      _pendingDeltas.remove(itemKey);
+      _initialQuantities.remove(itemKey);
     });
   }
 
@@ -242,8 +288,8 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: _buildHeader()
                     .animate()
-                    .fade(duration: 500.ms)
-                    .slideY(begin: -0.2, curve: Curves.easeOutExpo),
+                    .fade(duration: 400.ms)
+                    .slideY(begin: -0.1, curve: Curves.easeOut),
               ),
               SliverPersistentHeader(
                   pinned: true,
@@ -259,23 +305,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                      Icon(Icons.inbox, size: 60, color: Colors.grey[300]),
+                      Icon(Icons.inbox_outlined,
+                          size: 60, color: Colors.grey.withOpacity(0.3)),
                       const SizedBox(height: 10),
-                      const Text("Список пустий",
-                          style: TextStyle(color: Colors.grey))
+                      Text("Список пустий",
+                          style: TextStyle(
+                              color: Colors.grey.withOpacity(0.8),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold))
                     ])))
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 15, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(
+                      16, 10, 16, 100), // Зменшено відступи по боках
                   sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                           (ctx, i) => _itemCard(_filteredItems[i])
-                              .animate(delay: (i.clamp(0, 10) * 40).ms)
-                              .fade(duration: 300.ms)
+                              .animate(delay: (i.clamp(0, 10) * 20).ms)
+                              .fade(duration: 250.ms)
                               .slideY(
-                                  begin: 0.1,
-                                  duration: 300.ms,
-                                  curve: Curves.easeOutQuad),
+                                  begin: 0.05,
+                                  duration: 250.ms,
+                                  curve: Curves.easeOutCubic),
                           childCount: _filteredItems.length)),
                 ),
             ],
@@ -291,11 +342,15 @@ class _HomeScreenState extends State<HomeScreen> {
             FloatingActionButton.extended(
               heroTag: "calc_btn",
               backgroundColor: const Color(0xFF00E676),
-              icon: const Icon(Icons.analytics_outlined,
-                  color: Color(0xFF121212)),
-              label: const Text("АНАЛІЗ КОМПЛЕКТАЦІЇ",
+              elevation: 6,
+              icon: const Icon(Icons.analytics_rounded,
+                  color: Color(0xFF121212), size: 22),
+              label: const Text("АНАЛІЗ", // Коротша назва
                   style: TextStyle(
-                      color: Color(0xFF121212), fontWeight: FontWeight.bold)),
+                      color: Color(0xFF121212),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                      fontSize: 14)),
               onPressed: () {
                 _vibrate(duration: 30);
                 String sKey = _activeFilter == 'Зима'
@@ -304,23 +359,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 String sName = _activeFilter.toUpperCase();
 
                 Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        CalculatorScreen(seasonKey: sKey, seasonName: sName),
-                  ),
-                );
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => CalculatorScreen(
+                            seasonKey: sKey, seasonName: sName)));
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
           FloatingActionButton(
             heroTag: "add_btn",
             backgroundColor: AppColors.accent,
-            elevation: 10,
+            elevation: 8,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: const Icon(Icons.add, color: Colors.white, size: 32),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
             onPressed: () async {
               _vibrate(duration: 50);
               final res = await Navigator.push(
@@ -337,17 +390,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 25),
+      padding:
+          const EdgeInsets.fromLTRB(16, 16, 16, 20), // Зменшено відступи шапки
       margin: const EdgeInsets.only(bottom: 5),
       decoration: BoxDecoration(
           color: AppColors.bg,
           borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30)),
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-                color: AppColors.shadowBottom,
-                offset: const Offset(0, 5),
+                color: AppColors.shadowBottom.withOpacity(0.4),
+                offset: const Offset(0, 6),
                 blurRadius: 15)
           ]),
       child: Column(children: [
@@ -356,32 +410,36 @@ class _HomeScreenState extends State<HomeScreen> {
             Text("W-Node",
                 style: TextStyle(
                     color: AppColors.textMain,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 26)),
-            const SizedBox(width: 10),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                    fontSize: 24)), // Зменшено шрифт
+            const SizedBox(width: 8),
             Container(
-                width: 12,
-                height: 12,
+                width: 10, // Менший індикатор
+                height: 10,
                 decoration: BoxDecoration(
                     color: _isConnected
-                        ? Colors.green
-                        : (_isSyncing ? Colors.orange : Colors.red),
+                        ? Colors.greenAccent
+                        : (_isSyncing ? Colors.orangeAccent : Colors.redAccent),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                          color: (_isConnected ? Colors.green : Colors.red)
+                          color: (_isConnected
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent)
                               .withOpacity(0.6),
-                          blurRadius: 8)
+                          blurRadius: 6,
+                          spreadRadius: 1)
                     ]))
           ]),
           Row(children: [
-            _iconBtn(Icons.history, AppColors.accentBlue, () {
+            _iconBtn(Icons.history_rounded, AppColors.accentBlue, () {
               _vibrate(duration: 20);
               Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const LogsScreen()));
             }),
             const SizedBox(width: 10),
-            _iconBtn(Icons.checklist_rtl, Colors.purpleAccent, () async {
+            _iconBtn(Icons.rule_rounded, Colors.purpleAccent, () async {
               _vibrate(duration: 20);
               await Navigator.push(
                   context,
@@ -390,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _loadLocalData();
             }),
             const SizedBox(width: 10),
-            _iconBtn(Icons.settings, AppColors.textMain, () async {
+            _iconBtn(Icons.settings_rounded, AppColors.textMain, () async {
               _vibrate(duration: 20);
               await Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const SettingsScreen()));
@@ -398,11 +456,12 @@ class _HomeScreenState extends State<HomeScreen> {
             }),
           ])
         ]),
-        const SizedBox(height: 25),
+        const SizedBox(height: 20), // Зменшено проміжок
         Container(
+          height: 48, // Більш компактний пошук
           decoration: BoxDecoration(
               color: AppColors.bg,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                     color: AppColors.shadowTop,
@@ -418,16 +477,19 @@ class _HomeScreenState extends State<HomeScreen> {
               _searchQuery = val;
               _applyFilters();
             },
-            style: TextStyle(color: AppColors.textMain, fontSize: 18),
+            style: TextStyle(
+                color: AppColors.textMain,
+                fontSize: 16,
+                fontWeight: FontWeight.w500),
             decoration: InputDecoration(
                 hintText: "Пошук...",
-                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.7)),
-                prefixIcon:
-                    Icon(Icons.search, color: AppColors.accentBlue, size: 26),
+                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
+                prefixIcon: const Icon(Icons.search_rounded,
+                    color: AppColors.accentBlue, size: 22),
                 border: InputBorder.none,
                 filled: false,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 18, horizontal: 20)),
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 16)), // Тонший інпут
           ),
         ),
       ]),
@@ -441,20 +503,21 @@ class _HomeScreenState extends State<HomeScreen> {
       alignment: Alignment.center,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _chip("Все"),
-          const SizedBox(width: 12),
-          _chip("Склад 1", config.wh1Name, Icons.store, Colors.blueAccent),
-          const SizedBox(width: 12),
-          _chip("Склад 2", config.wh2Name, Icons.store_mall_directory,
+          const SizedBox(width: 10),
+          _chip("Склад 1", config.wh1Name, Icons.store_rounded,
+              Colors.blueAccent),
+          const SizedBox(width: 10),
+          _chip("Склад 2", config.wh2Name, Icons.store_mall_directory_rounded,
               Colors.indigoAccent),
-          const SizedBox(width: 12),
-          _chip("Зима", null, Icons.ac_unit, Colors.cyan),
-          const SizedBox(width: 12),
-          _chip("Літо", null, Icons.wb_sunny, Colors.orange),
-          const SizedBox(width: 12),
-          _chip("Видача", "Інвентар", Icons.handyman, Colors.purple),
+          const SizedBox(width: 10),
+          _chip("Зима", null, Icons.ac_unit_rounded, Colors.cyan),
+          const SizedBox(width: 10),
+          _chip("Літо", null, Icons.wb_sunny_rounded, Colors.orange),
+          const SizedBox(width: 10),
+          _chip("Видача", "Інвентар", Icons.handyman_rounded, Colors.purple),
         ]),
       ),
     );
@@ -464,22 +527,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
         onTap: onTap,
         child: Container(
-            width: 42,
-            height: 42,
+            width: 38, // Зменшено
+            height: 38,
             decoration: BoxDecoration(
                 color: AppColors.bg,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                       color: AppColors.shadowTop,
-                      offset: const Offset(-3, -3),
-                      blurRadius: 5),
+                      offset: const Offset(-2, -2),
+                      blurRadius: 4),
                   BoxShadow(
                       color: AppColors.shadowBottom,
-                      offset: const Offset(3, 3),
-                      blurRadius: 5)
+                      offset: const Offset(2, 2),
+                      blurRadius: 4)
                 ]),
-            child: Icon(icon, color: col, size: 22)));
+            child: Icon(icon, color: col, size: 20))); // Зменшено іконку
   }
 
   Widget _chip(String key, [String? label, IconData? icon, Color? iconColor]) {
@@ -493,13 +556,16 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(
+            horizontal: 18, vertical: 10), // Компактніші фільтри
         decoration: BoxDecoration(
             color: AppColors.bg,
-            borderRadius: BorderRadius.circular(24),
-            border:
-                active ? Border.all(color: AppColors.accent, width: 1.5) : null,
+            borderRadius: BorderRadius.circular(20),
+            border: active
+                ? Border.all(color: AppColors.accent, width: 1.5)
+                : Border.all(color: Colors.transparent, width: 1.5),
             boxShadow: active
                 ? [
                     BoxShadow(
@@ -527,14 +593,16 @@ class _HomeScreenState extends State<HomeScreen> {
           if (icon != null) ...[
             Icon(icon,
                 size: 16,
-                color: active ? AppColors.accent : (iconColor ?? Colors.grey)),
+                color: active
+                    ? AppColors.accent
+                    : (iconColor ?? Colors.grey)), // Менші іконки
             const SizedBox(width: 6)
           ],
           Text(label ?? key,
               style: TextStyle(
                   color: active ? AppColors.accent : Colors.grey,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16)),
+                  fontSize: 14)), // Менший шрифт
         ]),
       ),
     );
@@ -543,38 +611,41 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoryBadge(String category) {
     String cleanCat = category.trim().toUpperCase();
     if (cleanCat.isEmpty || cleanCat == "NULL") return const SizedBox.shrink();
-    String label = "I";
+    String label = "КАТ: I";
     Color color = Colors.cyanAccent;
     if (cleanCat.contains("II") || cleanCat.contains("2")) {
-      label = "II";
+      label = "КАТ: II";
       color = Colors.orangeAccent;
     }
     return Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 8, vertical: 3), // Менші відступи
         decoration: BoxDecoration(
             color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: color.withOpacity(0.5), width: 1)),
         child: Text(label,
             style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 12)));
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+                letterSpacing: 0.5))); // Шрифт 10
   }
 
   Widget _buildInventoryBadge() {
     return Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
             color: Colors.purpleAccent.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
                 color: Colors.purpleAccent.withOpacity(0.5), width: 1)),
         child: const Text("ІНВЕНТАР",
             style: TextStyle(
                 color: Colors.purpleAccent,
                 fontWeight: FontWeight.bold,
-                fontSize: 10)));
+                fontSize: 10,
+                letterSpacing: 0.5)));
   }
 
   Widget _itemCard(Map<String, dynamic> item) {
@@ -589,7 +660,8 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isInventory = flagCheck || (item['item_type'] == "Інвентар");
     String rawDate = item['date_added']?.toString() ?? "";
     String date = (rawDate.length >= 10) ? rawDate.substring(0, 10) : rawDate;
-    IconData typeIcon = isInventory ? Icons.handyman : Icons.checkroom;
+    IconData typeIcon =
+        isInventory ? Icons.handyman_rounded : Icons.checkroom_rounded;
     Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
 
     return Dismissible(
@@ -598,18 +670,20 @@ class _HomeScreenState extends State<HomeScreen> {
       background: Container(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.only(left: 20),
-          margin: const EdgeInsets.only(bottom: 20),
+          margin: const EdgeInsets.only(bottom: 15),
           decoration: BoxDecoration(
               color: AppColors.accentBlue,
-              borderRadius: BorderRadius.circular(24)),
-          child: const Icon(Icons.menu_open, color: Colors.white, size: 30)),
+              borderRadius: BorderRadius.circular(20)),
+          child: const Icon(Icons.menu_open_rounded,
+              color: Colors.white, size: 28)),
       secondaryBackground: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
-          margin: const EdgeInsets.only(bottom: 20),
+          margin: const EdgeInsets.only(bottom: 15),
           decoration: BoxDecoration(
-              color: Colors.red, borderRadius: BorderRadius.circular(24)),
-          child: const Icon(Icons.delete, color: Colors.white, size: 30)),
+              color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+          child: const Icon(Icons.delete_outline_rounded,
+              color: Colors.white, size: 28)),
       confirmDismiss: (dir) async {
         if (dir == DismissDirection.endToStart) {
           _vibrate(duration: 50);
@@ -629,35 +703,37 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.all(20),
+          curve: Curves.fastOutSlowIn,
+          margin: const EdgeInsets.only(
+              bottom: 15), // Зменшено відступ між картками
+          padding: const EdgeInsets.all(16), // Менший падінг всередині картки
           decoration: BoxDecoration(
               color: AppColors.bg,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20), // Менш "круглі" картки
               boxShadow: [
                 BoxShadow(
                     color: AppColors.shadowBottom,
-                    offset: const Offset(5, 5),
-                    blurRadius: 12),
+                    offset: const Offset(4, 4),
+                    blurRadius: 10),
                 BoxShadow(
                     color: AppColors.shadowTop,
-                    offset: const Offset(-5, -5),
-                    blurRadius: 12)
+                    offset: const Offset(-4, -4),
+                    blurRadius: 10)
               ],
               border: expanded
                   ? Border.all(color: typeColor.withOpacity(0.5), width: 1.5)
-                  : null),
+                  : Border.all(
+                      color: Colors.white.withOpacity(0.02), width: 1.5)),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10), // Зменшено іконку товару
                   decoration: BoxDecoration(
                       color: typeColor.withOpacity(0.1),
                       shape: BoxShape.circle),
-                  child: Icon(typeIcon, color: typeColor, size: 24)),
+                  child: Icon(typeIcon, color: typeColor, size: 22)),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,31 +741,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(name,
                         style: TextStyle(
                             color: AppColors.textMain,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
-                        maxLines: 3,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold), // Шрифт 16
+                        maxLines: 2, // Оптимально 2 рядки для компактності
                         softWrap: true,
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
-                    Row(children: [
-                      if (isInventory) _buildInventoryBadge(),
-                      _buildCategoryBadge(cat),
-                      const Icon(Icons.place, size: 12, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(wh,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold)),
-                      )
-                    ])
+                    Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (isInventory) _buildInventoryBadge(),
+                          _buildCategoryBadge(cat),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.place_rounded,
+                                  size: 12, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Container(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 100),
+                                child: Text(wh,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold)),
+                              )
+                            ],
+                          )
+                        ])
                   ])),
               Container(
-                  width: 50,
-                  height: 50,
+                  width: 45, // Зменшено індикатор
+                  height: 45,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                       color: AppColors.bg,
@@ -697,30 +785,34 @@ class _HomeScreenState extends State<HomeScreen> {
                       boxShadow: [
                         BoxShadow(
                             color: AppColors.shadowTop,
-                            offset: const Offset(-3, -3),
-                            blurRadius: 5),
+                            offset: const Offset(-2, -2),
+                            blurRadius: 4),
                         BoxShadow(
                             color: AppColors.shadowBottom,
-                            offset: const Offset(3, 3),
-                            blurRadius: 5)
+                            offset: const Offset(2, 2),
+                            blurRadius: 4)
                       ]),
                   child: Text("$total",
                       style: TextStyle(
-                          color: typeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18))),
+                          color: total == 0 ? Colors.redAccent : typeColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16))), // Шрифт 16
             ]),
             if (expanded) ...[
-              const SizedBox(height: 20),
-              Divider(color: Colors.grey.withOpacity(0.2)),
               const SizedBox(height: 15),
+              Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+              const SizedBox(height: 12),
               _controlPanel(item, total, isInventory),
-              const SizedBox(height: 15),
+              const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                const Icon(Icons.calendar_today_rounded,
+                    size: 12, color: Colors.grey),
                 const SizedBox(width: 4),
                 Text(date,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12))
+                    style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500))
               ])
             ]
           ]),
@@ -730,7 +822,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _controlPanel(Map<String, dynamic> item, int total, bool isInventory) {
-    // 🔥 БЕЗПЕЧНИЙ ПАРСИНГ!
     Map<String, dynamic> sizes = _parseSizeSafe(item['size_data']);
 
     if (sizes.isEmpty) {
@@ -742,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onMinusLong: () => _showBulkDialog(item, null, false),
           onPlusLong: () => _showBulkDialog(item, null, true),
           isInv: isInventory,
-          icon: isInventory ? Icons.build : Icons.checkroom);
+          icon: isInventory ? Icons.build_rounded : Icons.checkroom_rounded);
     }
     if (sizes.length == 1) {
       String key = sizes.keys.first;
@@ -761,9 +852,9 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.5,
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15),
+            childAspectRatio: 1.8, // Зробив блоки розмірів нижчими
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12),
         itemCount: sizes.length,
         itemBuilder: (ctx, i) {
           String key = sizes.keys.elementAt(i);
@@ -771,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return Container(
             decoration: BoxDecoration(
                 color: AppColors.bg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                       color: AppColors.shadowTop,
@@ -788,18 +879,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                       color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16)),
-              const SizedBox(height: 5),
+                      fontSize: 14)), // Шрифт 14
+              const SizedBox(height: 6),
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                _bigBtn(Icons.remove, () => _updateQuantity(item, key, -1),
-                    () => _showBulkDialog(item, key, false), isInventory,
+                _bigBtn(
+                    Icons.remove_rounded,
+                    () => _updateQuantity(item, key, -1),
+                    () => _showBulkDialog(item, key, false),
+                    isInventory,
                     small: true),
                 Text("$val",
                     style: TextStyle(
-                        color: AppColors.textMain,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                _bigBtn(Icons.add, () => _updateQuantity(item, key, 1),
+                        color: val == 0 ? Colors.grey : AppColors.textMain,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900)), // Шрифт 16
+                _bigBtn(Icons.add_rounded, () => _updateQuantity(item, key, 1),
                     () => _showBulkDialog(item, key, true), isInventory,
                     small: true)
               ])
@@ -819,10 +913,10 @@ class _HomeScreenState extends State<HomeScreen> {
       IconData? icon}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 16), // Зменшено
       decoration: BoxDecoration(
           color: AppColors.bg,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
                 color: AppColors.shadowTop,
@@ -836,24 +930,24 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           if (icon != null) ...[
-            Icon(icon, color: Colors.grey, size: 24),
+            Icon(icon, color: Colors.grey, size: 20),
             const SizedBox(width: 8)
           ],
           Text(label,
               style: TextStyle(
                   color: AppColors.textMain,
                   fontWeight: FontWeight.bold,
-                  fontSize: 20))
+                  fontSize: 16)) // Шрифт 16
         ]),
-        const SizedBox(height: 20),
+        const SizedBox(height: 15),
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          _bigBtn(Icons.remove, onMinus, onMinusLong, isInv),
+          _bigBtn(Icons.remove_rounded, onMinus, onMinusLong, isInv),
           Text("$val",
               style: TextStyle(
-                  color: AppColors.textMain,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold)),
-          _bigBtn(Icons.add, onPlus, onPlusLong, isInv)
+                  color: val == 0 ? Colors.redAccent : AppColors.textMain,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900)), // Шрифт 24
+          _bigBtn(Icons.add_rounded, onPlus, onPlusLong, isInv)
         ])
       ]),
     );
@@ -862,7 +956,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _bigBtn(
       IconData icon, VoidCallback onTap, VoidCallback onLongPress, bool isInv,
       {bool small = false}) {
-    double size = small ? 40 : 55;
+    double size = small ? 35 : 45; // Зробив кнопки компактними, але зручними
     return InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
@@ -876,15 +970,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 boxShadow: [
                   BoxShadow(
                       color: AppColors.shadowBottom,
-                      offset: const Offset(4, 4),
-                      blurRadius: 6),
+                      offset: const Offset(3, 3),
+                      blurRadius: 5),
                   BoxShadow(
                       color: AppColors.shadowTop,
-                      offset: const Offset(-4, -4),
-                      blurRadius: 6)
+                      offset: const Offset(-3, -3),
+                      blurRadius: 5)
                 ]),
             child: Icon(icon,
-                color: isInv ? Colors.purple : AppColors.accent,
+                color: isInv ? Colors.purpleAccent : AppColors.accent,
                 size: size * 0.5)));
   }
 
@@ -897,22 +991,26 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (ctx) => AlertDialog(
                 backgroundColor: AppColors.bg,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                title: Text(title, style: TextStyle(color: AppColors.textMain)),
+                    borderRadius: BorderRadius.circular(20)),
+                title: Text(title,
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18)),
                 content: Container(
                     decoration: BoxDecoration(
                         color: AppColors.bg,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                               color: AppColors.shadowTop,
                               offset: const Offset(2, 2),
-                              blurRadius: 3,
+                              blurRadius: 4,
                               spreadRadius: -2),
                           BoxShadow(
                               color: AppColors.shadowBottom,
                               offset: const Offset(-2, -2),
-                              blurRadius: 3,
+                              blurRadius: 4,
                               spreadRadius: -2)
                         ]),
                     child: TextField(
@@ -921,25 +1019,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         autofocus: true,
                         style: TextStyle(
                             color: AppColors.textMain,
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                         decoration: const InputDecoration(
-                            hintText: "Введіть число",
+                            hintText: "0",
                             hintStyle: TextStyle(color: Colors.grey),
                             filled: false,
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 15)))),
+                                horizontal: 10, vertical: 10)))),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       child: const Text("Відміна",
-                          style: TextStyle(color: Colors.grey))),
+                          style: TextStyle(color: Colors.grey, fontSize: 14))),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accent,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16))),
+                              borderRadius: BorderRadius.circular(12))),
                       onPressed: () {
                         _vibrate(duration: 60);
                         int val = int.tryParse(qtyCtrl.text) ?? 0;
@@ -950,7 +1051,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.pop(ctx);
                       },
                       child: const Text("ОК",
-                          style: TextStyle(color: Colors.white)))
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)))
                 ]));
   }
 
@@ -962,19 +1066,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppColors.bg,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20)),
-                title: Text("Видалити?",
-                    style: TextStyle(color: AppColors.textMain)),
+                title: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.redAccent),
+                    const SizedBox(width: 10),
+                    Text("Видалити?",
+                        style: TextStyle(
+                            color: AppColors.textMain,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
                 content: const Text("Цей запис буде переміщено в архів.",
-                    style: TextStyle(color: Colors.grey)),
+                    style: TextStyle(color: Colors.grey, fontSize: 15)),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
                       child: const Text("Ні",
-                          style: TextStyle(color: Colors.grey))),
+                          style: TextStyle(color: Colors.grey, fontSize: 15))),
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
                       child: const Text("Так",
-                          style: TextStyle(color: Colors.red)))
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)))
                 ]));
     if (confirm) {
       _vibrate(duration: 100);
@@ -982,7 +1098,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
           where: 'local_id = ?', whereArgs: [localId]);
       await DBService()
-          .logHistory("Товар ID $localId", "Видалено", "Переміщено в архів");
+          .logHistory("Видалено", "Товар ID $localId", "Переміщено в архів");
       _loadLocalData();
       DBService().syncWithCloud();
     }
@@ -1005,11 +1121,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                     color: AppColors.bg,
                     borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(30)),
+                        const BorderRadius.vertical(top: Radius.circular(25)),
                     boxShadow: [
                       BoxShadow(
                           color: AppColors.shadowTop,
-                          blurRadius: 10,
+                          blurRadius: 15,
                           offset: const Offset(0, -5))
                     ]),
                 child: Column(
@@ -1022,14 +1138,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.grey[700],
                             borderRadius: BorderRadius.circular(10))),
                     const SizedBox(height: 20),
-                    Text("Швидкі дії",
+                    Text("ШВИДКІ ДІЇ",
                         style: TextStyle(
                             color: AppColors.textMain,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2)),
                     const SizedBox(height: 10),
                     _quickActionTile(
-                        icon: Icons.ac_unit,
+                        icon: Icons.ac_unit_rounded,
                         title: isWinter ? "Прибрати із Зими" : "Додати в Зиму",
                         isActive: isWinter,
                         color: Colors.cyan,
@@ -1041,7 +1158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _loadLocalData();
                         }),
                     _quickActionTile(
-                        icon: Icons.wb_sunny,
+                        icon: Icons.wb_sunny_rounded,
                         title: isSummer ? "Прибрати з Літа" : "Додати в Літо",
                         isActive: isSummer,
                         color: Colors.orange,
@@ -1053,10 +1170,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           _loadLocalData();
                         }),
                     _quickActionTile(
-                        icon: Icons.handyman,
+                        icon: Icons.handyman_rounded,
                         title: isInv ? "Прибрати з Видачі" : "Додати у Видачу",
                         isActive: isInv,
-                        color: Colors.purple,
+                        color: Colors.purpleAccent,
                         onTap: () async {
                           _vibrate(duration: 20);
                           await DBService()
@@ -1064,7 +1181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           setModalState(() => isInv = !isInv);
                           _loadLocalData();
                         }),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                   ],
                 ),
               );
@@ -1080,19 +1197,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
       decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.1) : AppColors.bg,
-        borderRadius: BorderRadius.circular(15),
-      ),
+          color: isActive ? color.withOpacity(0.15) : AppColors.bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: isActive ? color.withOpacity(0.3) : Colors.transparent)),
       child: ListTile(
         onTap: onTap,
-        leading: Icon(icon, color: isActive ? color : Colors.grey),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 0), // Компактніше меню
+        leading: Icon(icon, color: isActive ? color : Colors.grey, size: 24),
         title: Text(title,
             style: TextStyle(
                 color: isActive ? color : Colors.grey,
-                fontWeight: FontWeight.bold)),
+                fontWeight: FontWeight.bold,
+                fontSize: 15)),
         trailing: isActive
-            ? Icon(Icons.check_circle, color: color)
-            : const Icon(Icons.circle_outlined, color: Colors.grey),
+            ? Icon(Icons.check_circle_rounded, color: color, size: 24)
+            : const Icon(Icons.circle_outlined, color: Colors.grey, size: 24),
       ),
     );
   }
@@ -1110,16 +1231,16 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
               boxShadow: overlapsContent
                   ? [
                       const BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                          offset: Offset(0, 4))
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 3))
                     ]
                   : null),
           child: child);
   @override
-  double get maxExtent => 70;
+  double get maxExtent => 60; // Зменшена висота панелі фільтрів
   @override
-  double get minExtent => 70;
+  double get minExtent => 60;
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
       true;

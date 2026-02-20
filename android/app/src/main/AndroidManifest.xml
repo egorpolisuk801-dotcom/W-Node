@@ -9,6 +9,7 @@
         android:label="W-Node"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:roundIcon="@mipmap/launcher_icon" 
         android:enableOnBackInvokedCallback="true">
         
         <activity

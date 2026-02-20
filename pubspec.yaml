@@ -13,7 +13,7 @@ dependencies:
   connectivity_plus: ^6.1.5
   flutter_local_notifications: ^17.2.4
   flutter_animate: ^4.5.0
-  postgres: ^2.6.4 # Как в твоем успешном логе
+  postgres: ^2.6.4
 
   sqflite: ^2.3.0
   sqflite_common_ffi: ^2.3.0
@@ -29,13 +29,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 3.0.2
-  flutter_launcher_icons: 0.13.1
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icon.png"
+  # 🔥 Додаємо адаптивні шари для Android 8+ (Samsung Fix)
+  adaptive_icon_background: "#121212"
+  adaptive_icon_foreground: "assets/icon.png"
   min_sdk_android: 21

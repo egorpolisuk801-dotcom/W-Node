@@ -360,7 +360,6 @@ class DBService {
       Map<String, dynamic> newSizes, int newTotal) async {
     final db = await localDb;
 
-    // 1. Узнаем старое количество
     int oldTotal = 0;
     var res = await db.query('items',
         columns: ['total_quantity'],
@@ -370,7 +369,6 @@ class DBService {
       oldTotal = res.first['total_quantity'] as int;
     }
 
-    // 2. Обновляем
     await db.update(
         'items',
         {
@@ -381,41 +379,6 @@ class DBService {
         where: 'local_id = ?',
         whereArgs: [localId]);
 
-    // 3. Пишем красивый лог
-    String arrow =
-        newTotal > oldTotal ? "🟢" : (newTotal < oldTotal ? "🔴" : "⚪");
-    await logHistory(
-        "Зміна (розміри)", name, "$arrow Залишок: $oldTotal ➡️ $newTotal",
-        itemId: localId);
-    syncWithCloud();
-  }
-
-  // 🔥 ОБНОВЛЕНИЕ КОЛИЧЕСТВА С ПОДСЧЕТОМ
-  Future<void> updateItemQuantity(int localId, int newTotal) async {
-    final db = await localDb;
-
-    // 1. Узнаем, сколько БЫЛО
-    int oldTotal = 0;
-    String name = "Товар";
-    var res = await db.query('items',
-        columns: ['total_quantity', 'name'],
-        where: 'local_id = ?',
-        whereArgs: [localId]);
-    if (res.isNotEmpty) {
-      oldTotal = res.first['total_quantity'] as int;
-      name = (res.first['name'] ?? "Товар") as String;
-    }
-
-    // 2. Обновляем
-    await db.update('items', {'total_quantity': newTotal, 'is_unsynced': 1},
-        where: 'local_id = ?', whereArgs: [localId]);
-
-    // 3. Лог
-    String arrow =
-        newTotal > oldTotal ? "🟢" : (newTotal < oldTotal ? "🔴" : "⚪");
-    await logHistory(
-        "Зміна к-сті", name, "$arrow Було: $oldTotal ➡️ Стало: $newTotal",
-        itemId: localId);
     syncWithCloud();
   }
 
@@ -423,7 +386,6 @@ class DBService {
   Future<void> deleteItem(int localId) async {
     final db = await localDb;
 
-    // 1. Узнаем имя и кол-во перед удалением
     int oldTotal = 0;
     String name = "Товар";
     var res = await db.query('items',
@@ -435,41 +397,66 @@ class DBService {
       name = (res.first['name'] ?? "Товар") as String;
     }
 
-    // 2. Помечаем удаленным
     await db.update('items', {'is_deleted': 1, 'is_unsynced': 1},
         where: 'local_id = ?', whereArgs: [localId]);
 
-    // 3. Лог
     await logHistory(
         "Видалення", name, "🗑️ Видалено (На залишку було: $oldTotal шт.)",
         itemId: localId);
     syncWithCloud();
   }
 
-  // 🔥 ПОЛУЧЕНИЕ ИСТОРИИ (УМНЫЙ JOIN)
+  // 🔥 ПОЛУЧЕНИЕ ИСТОРИИ (БЕЗ ЗНИКНЕННЯ ОФЛАЙН ЛОГІВ)
   Future<List<Map<String, dynamic>>> getLogs() async {
-    // Если есть интернет - с сервера
+    final db = await localDb;
+
+    // 1. Завжди спочатку беремо локальні логи, які ще НЕ відправлені на сервер (офлайн)
+    final localUnsynced = await db.rawQuery('''
+      SELECT 
+        h.id, h.action_type, h.details, h.timestamp, h.device, h.item_id,
+        CASE WHEN h.item_name IS NOT NULL AND h.item_name != '' THEN h.item_name ELSE COALESCE(i.name, '???') END as item_name,
+        h.is_unsynced
+      FROM logs h
+      LEFT JOIN items i ON h.item_id = i.local_id
+      WHERE h.is_unsynced = 1
+      ORDER BY h.id DESC
+    ''');
+
+    List<Map<String, dynamic>> finalLogs =
+        List<Map<String, dynamic>>.from(localUnsynced);
+
+    // 2. Якщо є інтернет - тягнемо основну історію з хмари
     if (await initConnection()) {
       try {
         final res = await _pgConnection!.mappedResultsQuery(
             "SELECT * FROM history_logs ORDER BY id DESC LIMIT 50");
-        return res.map((row) => row['history_logs']!).toList();
+
+        var cloudLogs = res.map((row) {
+          var log = row['history_logs']!;
+          log['is_unsynced'] =
+              0; // Якщо воно в хмарі, значить точно синхронізовано
+          return log;
+        }).toList();
+
+        finalLogs.addAll(cloudLogs);
+
+        // Сортуємо загальний список по часу, щоб нові були зверху
+        finalLogs.sort((a, b) => (b['timestamp'] ?? "")
+            .toString()
+            .compareTo((a['timestamp'] ?? "").toString()));
+
+        return finalLogs;
       } catch (e) {
-        print(e);
+        print("Хмарна історія недоступна: $e");
       }
     }
 
-    // Если интернета нет - локально соединяем таблицы
-    final db = await localDb;
+    // 3. Якщо інтернету немає взагалі - показуємо всю локальну базу
     return await db.rawQuery('''
       SELECT 
-        h.id, 
-        h.action_type, 
-        h.details, 
-        h.timestamp, 
-        h.device,
-        h.item_id,
-        COALESCE(i.name, h.item_name) as item_name
+        h.id, h.action_type, h.details, h.timestamp, h.device, h.item_id,
+        CASE WHEN h.item_name IS NOT NULL AND h.item_name != '' THEN h.item_name ELSE COALESCE(i.name, '???') END as item_name,
+        h.is_unsynced
       FROM logs h
       LEFT JOIN items i ON h.item_id = i.local_id
       ORDER BY h.id DESC
