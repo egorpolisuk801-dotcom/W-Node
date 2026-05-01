@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import '../core/app_colors.dart';
-import '../services/db_service.dart';
+import 'dart:async';
+
+// 🔥 ПІДКЛЮЧЕНО СПРАВЖНІЙ ГОЛОВНИЙ ЕКРАН 🔥
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,151 +13,199 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
+  String _loadingText = "ІНІЦІАЛІЗАЦІЯ W-NODE CORE...";
+  double _progressValue = 0.0;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
+    // Налаштування анімації пульсації логотипу
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-
-    _controller.forward();
-
-    // Запускаем безопасную инициализацию
-    _safeInit();
+    // Запуск хакерської послідовності завантаження
+    _startBootSequence();
   }
 
-  Future<void> _safeInit() async {
-    try {
-      // 1. Минимальное время показа (3 секунды)
-      final minDisplayTime = Future.delayed(const Duration(seconds: 3));
+  void _startBootSequence() async {
+    // Етап 1: Початок
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() {
+      _loadingText = "ПІДКЛЮЧЕННЯ ДО SUPABASE CLOUD...";
+      _progressValue = 0.35;
+    });
 
-      // 2. Попытка подключения к БД с жестким таймаутом (5 секунд)
-      // Если база не ответит за 5 секунд, вылетит ошибка, которую поймает catch
-      final dbInit =
-          DBService().initConnection().timeout(const Duration(seconds: 5));
+    // Етап 2: Синхронізація
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+    setState(() {
+      _loadingText = "СИНХРОНІЗАЦІЯ ДАНИХ СКЛАДІВ...";
+      _progressValue = 0.75;
+    });
 
-      // Ждем завершения обоих процессов
-      await Future.wait([minDisplayTime, dbInit]);
-    } catch (e) {
-      debugPrint("⚠️ Инициализация завершена с ошибкой/таймаутом: $e");
-      // Даже если база упала, мы идем дальше, чтобы не висеть на заставке
-    } finally {
-      _navigateToHome();
-    }
-  }
+    // Етап 3: Фіналізація
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    setState(() {
+      _loadingText = "СИСТЕМА АКТИВОВАНА. ВХІД...";
+      _progressValue = 1.0;
+    });
 
-  void _navigateToHome() {
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    }
+    // Коротка пауза для ефекту "успіху"
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+
+    // 🔥 ПЕРЕХІД НА ГОЛОВНИЙ ЕКРАН (ТЕПЕР НА HOMESCREEN) 🔥
+    // pushReplacement видаляє Splash з пам'яті, щоб не можна було повернутися назад
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const HomeScreen(), // <--- ВАЖЛИВА ЗМІНА ТУТ
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Плавне розчинення (Fade) при переході
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 1000),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _opacityAnimation.value,
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: child,
-                  ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.bg,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accent.withOpacity(0.6),
-                      blurRadius: 40,
-                      spreadRadius: 10,
-                    ),
-                    BoxShadow(
-                      color: AppColors.accentBlue.withOpacity(0.4),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
+      backgroundColor: const Color(0xFF0B1120), // Глибокий тактичний фон
+      body: Stack(
+        children: [
+          // Радіальний градієнт для ефекту глибини
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.2,
+                  colors: [
+                    const Color(0xFF00E676).withOpacity(0.08),
+                    const Color(0xFF0B1120),
                   ],
-                  border: Border.all(
-                    color: AppColors.accent.withOpacity(0.5),
-                    width: 2,
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(),
+
+                // Пульсуючий неоновий логотип
+                ScaleTransition(
+                  scale: _pulseAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.all(25),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: const Color(0xFF00E676), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E676).withOpacity(0.4),
+                          blurRadius: 30,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.memory_rounded,
+                      size: 80,
+                      color: Color(0xFF00E676),
+                    ),
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.qr_code_scanner,
-                        size: 80, color: AppColors.textMain),
-                    const SizedBox(height: 10),
-                    Text(
-                      "W-NODE",
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMain,
-                        letterSpacing: 5,
-                        shadows: [
-                          Shadow(color: AppColors.accent, blurRadius: 15),
+
+                const SizedBox(height: 40),
+
+                // Назва системи
+                const Text(
+                  "W-LOGISTICS",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 6.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "SECURE COMMAND CENTER",
+                  style: TextStyle(
+                    color: Color(0xFF00B0FF), // Неоновий синій підзаголовок
+                    fontSize: 14,
+                    letterSpacing: 3.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Нижня панель завантаження (Термінал)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 45.0, vertical: 60.0),
+                  child: Column(
+                    children: [
+                      // Тонка смуга прогресу
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: _progressValue,
+                          backgroundColor: const Color(0xFF1E293B),
+                          color: const Color(0xFF00E676),
+                          minHeight: 4,
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      // Рядок стану термінала
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.terminal_rounded,
+                              color: Color(0xFF00E676), size: 18),
+                          const SizedBox(width: 12),
+                          Text(
+                            _loadingText,
+                            style: const TextStyle(
+                              color: Color(0xFF00E676),
+                              fontFamily: 'Courier', // Моноширинний шрифт
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 50),
-            SizedBox(
-              width: 200,
-              child: LinearProgressIndicator(
-                backgroundColor: Colors.grey.withOpacity(0.1),
-                color: AppColors.accent,
-                minHeight: 4,
-              ),
-            ),
-            const SizedBox(height: 15),
-            const Text(
-              "INITIALIZING SYSTEM...",
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:vibration/vibration.dart';
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
 import '../services/db_service.dart';
+import '../core/smart_icons.dart';
 
 import 'add_universal_screen.dart';
 import 'settings_screen.dart';
 import 'logs_screen.dart';
 import 'season_settings_screen.dart';
 import 'calculator_screen.dart';
-import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +22,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _items = [];
   List<Map<String, dynamic>> _filteredItems = [];
 
@@ -37,19 +39,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<String> _summerSet = {};
   Set<String> _invSet = {};
 
-  // 🔥 СИСТЕМА ПАМ'ЯТІ ДЛЯ ШВИДКИХ КЛІКІВ (DEBOUNCE)
+  List<String> _warehouses = [];
+
   final Map<String, Timer> _debounceTimers = {};
   final Map<String, int> _pendingDeltas = {};
   final Map<String, int> _initialQuantities = {};
 
+  late AnimationController _pulseController;
+
   @override
   void initState() {
     super.initState();
+    // Анімація для пульсуючого радара підключення
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
     _initData();
   }
 
   @override
   void dispose() {
+    _pulseController.dispose();
     for (var timer in _debounceTimers.values) {
       timer.cancel();
     }
@@ -57,8 +69,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initData() async {
+    _loadWarehouses();
     await _loadLocalData();
     _syncData();
+  }
+
+  void _loadWarehouses() {
+    final cfg = UserConfig();
+    try {
+      if (cfg.wh1Name.startsWith('[')) {
+        _warehouses = List<String>.from(jsonDecode(cfg.wh1Name));
+      } else {
+        _warehouses =
+            [cfg.wh1Name, cfg.wh2Name].where((e) => e.isNotEmpty).toList();
+      }
+    } catch (e) {
+      _warehouses = ["ООС", "ППД"];
+    }
+    if (_warehouses.isEmpty) _warehouses = ["ООС", "ППД"];
+
+    if (_activeFilter != "Все" &&
+        _activeFilter != "Зима" &&
+        _activeFilter != "Літо" &&
+        _activeFilter != "Видача") {
+      if (!_warehouses.contains(_activeFilter)) {
+        _activeFilter = "Все";
+      }
+    }
   }
 
   void _vibrate({int duration = 30}) async {
@@ -139,6 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => _isSyncing = true);
     try {
       await DBService().syncWithCloud();
+      _loadWarehouses();
       await _loadLocalData();
       if (mounted) {
         setState(() {
@@ -156,7 +194,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 🔥 РОЗУМНЕ ОНОВЛЕННЯ З ЗАХИСТОМ ВІД ШВИДКИХ КЛІКІВ
   Future<void> _updateQuantity(
       Map<String, dynamic> item, String? sizeKey, int delta) async {
     _vibrate(duration: 30);
@@ -165,12 +202,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, dynamic> newSizes = _parseSizeSafe(item['size_data']);
     int currentTotal = int.tryParse(item['total'].toString()) ?? 0;
 
-    int cur = 0;
-    if (sizeKey != null) {
-      cur = int.tryParse(newSizes[sizeKey].toString()) ?? 0;
-    } else {
-      cur = currentTotal;
-    }
+    int cur = sizeKey != null
+        ? (int.tryParse(newSizes[sizeKey].toString()) ?? 0)
+        : currentTotal;
 
     if (!_initialQuantities.containsKey(itemKey)) {
       _initialQuantities[itemKey] = cur;
@@ -246,22 +280,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
         bool matchSearch = searchParams.contains(search);
         bool matchFilter = true;
-        final config = UserConfig();
 
         String itemWh = (item['warehouse'] ?? "").toString().toUpperCase();
-        String wh1 = config.wh1Name.toUpperCase();
-        String wh2 = config.wh2Name.toUpperCase();
 
-        if (_activeFilter == "Зима") {
+        if (_warehouses.contains(_activeFilter)) {
+          matchFilter = itemWh.contains(_activeFilter.toUpperCase());
+        } else if (_activeFilter == "Зима") {
           matchFilter = _winterSet.contains(itemId);
         } else if (_activeFilter == "Літо") {
           matchFilter = _summerSet.contains(itemId);
         } else if (_activeFilter == "Видача") {
           matchFilter = _invSet.contains(itemId);
-        } else if (_activeFilter == "Склад 1") {
-          matchFilter = itemWh.contains(wh1);
-        } else if (_activeFilter == "Склад 2") {
-          matchFilter = itemWh.contains(wh2);
         }
 
         return matchSearch && matchFilter;
@@ -301,23 +330,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             CircularProgressIndicator(color: AppColors.accent)))
               else if (_filteredItems.isEmpty)
                 SliverFillRemaining(
-                    child: Center(
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                      Icon(Icons.inbox_outlined,
-                          size: 60, color: Colors.grey.withOpacity(0.3)),
-                      const SizedBox(height: 10),
-                      Text("Список пустий",
-                          style: TextStyle(
-                              color: Colors.grey.withOpacity(0.8),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold))
-                    ])))
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox_outlined,
+                            size: 60, color: Colors.grey.withOpacity(0.3)),
+                        const SizedBox(height: 10),
+                        Text("Список пустий",
+                            style: TextStyle(
+                                color: Colors.grey.withOpacity(0.8),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold))
+                      ],
+                    ),
+                  ),
+                )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                      16, 10, 16, 100), // Зменшено відступи по боках
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
                   sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                           (ctx, i) => _itemCard(_filteredItems[i])
@@ -345,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
               elevation: 6,
               icon: const Icon(Icons.analytics_rounded,
                   color: Color(0xFF121212), size: 22),
-              label: const Text("АНАЛІЗ", // Коротша назва
+              label: const Text("АНАЛІЗ",
                   style: TextStyle(
                       color: Color(0xFF121212),
                       fontWeight: FontWeight.w900,
@@ -390,8 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding:
-          const EdgeInsets.fromLTRB(16, 16, 16, 20), // Зменшено відступи шапки
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       margin: const EdgeInsets.only(bottom: 5),
       decoration: BoxDecoration(
           color: AppColors.bg,
@@ -406,32 +436,54 @@ class _HomeScreenState extends State<HomeScreen> {
           ]),
       child: Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Row(children: [
-            Text("W-Node",
-                style: TextStyle(
-                    color: AppColors.textMain,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                    fontSize: 24)), // Зменшено шрифт
-            const SizedBox(width: 8),
-            Container(
-                width: 10, // Менший індикатор
-                height: 10,
-                decoration: BoxDecoration(
-                    color: _isConnected
-                        ? Colors.greenAccent
-                        : (_isSyncing ? Colors.orangeAccent : Colors.redAccent),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: (_isConnected
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent)
-                              .withOpacity(0.6),
-                          blurRadius: 6,
-                          spreadRadius: 1)
-                    ]))
-          ]),
+          // 🔥 ОНОВЛЕНИЙ ЗАГОЛОВОК ЯК НА ЗАСТАВЦІ 🔥
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text("W-LOGISTICS",
+                      style: TextStyle(
+                          color: AppColors.textMain,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                          fontSize: 22)),
+                  const SizedBox(width: 8),
+                  AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) {
+                        return Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              color: _isConnected
+                                  ? const Color(0xFF00E676)
+                                  : (_isSyncing
+                                      ? Colors.orangeAccent
+                                      : Colors.redAccent),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: (_isConnected
+                                            ? const Color(0xFF00E676)
+                                            : Colors.redAccent)
+                                        .withOpacity(
+                                            0.6 * _pulseController.value),
+                                    blurRadius: 6 * _pulseController.value,
+                                    spreadRadius: 1 * _pulseController.value)
+                              ]),
+                        );
+                      })
+                ],
+              ),
+              const Text("COMMAND CENTER",
+                  style: TextStyle(
+                      color: Color(0xFF00B0FF),
+                      fontSize: 11,
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
           Row(children: [
             _iconBtn(Icons.history_rounded, AppColors.accentBlue, () {
               _vibrate(duration: 20);
@@ -452,13 +504,16 @@ class _HomeScreenState extends State<HomeScreen> {
               _vibrate(duration: 20);
               await Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              _loadLocalData();
+              setState(() {
+                _loadWarehouses();
+                _applyFilters();
+              });
             }),
           ])
         ]),
-        const SizedBox(height: 20), // Зменшено проміжок
+        const SizedBox(height: 20),
         Container(
-          height: 48, // Більш компактний пошук
+          height: 48,
           decoration: BoxDecoration(
               color: AppColors.bg,
               borderRadius: BorderRadius.circular(24),
@@ -488,8 +543,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.accentBlue, size: 22),
                 border: InputBorder.none,
                 filled: false,
-                contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 16)), // Тонший інпут
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16)),
           ),
         ),
       ]),
@@ -497,28 +552,49 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFilterRow() {
-    final config = UserConfig();
+    List<Widget> chips = [
+      _chip("Все", "Все", Icons.dashboard_rounded, Colors.grey),
+      const SizedBox(width: 10),
+    ];
+
+    List<Color> whColors = [
+      Colors.blueAccent,
+      Colors.indigoAccent,
+      Colors.teal,
+      Colors.deepPurple
+    ];
+    List<IconData> whIcons = [
+      Icons.store_rounded,
+      Icons.store_mall_directory_rounded,
+      Icons.warehouse_rounded,
+      Icons.domain_rounded
+    ];
+
+    for (int i = 0; i < _warehouses.length; i++) {
+      String wh = _warehouses[i];
+      chips.add(_chip(
+          wh, wh, whIcons[i % whIcons.length], whColors[i % whColors.length]));
+      chips.add(const SizedBox(width: 10));
+    }
+
+    chips.addAll([
+      _chip("Зима", null, Icons.ac_unit_rounded, Colors.cyan),
+      const SizedBox(width: 10),
+      _chip("Літо", null, Icons.wb_sunny_rounded, Colors.orange),
+      const SizedBox(width: 10),
+      _chip("Видача", "Інвентар", Icons.handyman_rounded, Colors.purple),
+    ]);
+
     return Container(
       color: AppColors.bg,
       alignment: Alignment.center,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _chip("Все"),
-          const SizedBox(width: 10),
-          _chip("Склад 1", config.wh1Name, Icons.store_rounded,
-              Colors.blueAccent),
-          const SizedBox(width: 10),
-          _chip("Склад 2", config.wh2Name, Icons.store_mall_directory_rounded,
-              Colors.indigoAccent),
-          const SizedBox(width: 10),
-          _chip("Зима", null, Icons.ac_unit_rounded, Colors.cyan),
-          const SizedBox(width: 10),
-          _chip("Літо", null, Icons.wb_sunny_rounded, Colors.orange),
-          const SizedBox(width: 10),
-          _chip("Видача", "Інвентар", Icons.handyman_rounded, Colors.purple),
-        ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: chips,
+        ),
       ),
     );
   }
@@ -527,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
         onTap: onTap,
         child: Container(
-            width: 38, // Зменшено
+            width: 38,
             height: 38,
             decoration: BoxDecoration(
                 color: AppColors.bg,
@@ -542,7 +618,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       offset: const Offset(2, 2),
                       blurRadius: 4)
                 ]),
-            child: Icon(icon, color: col, size: 20))); // Зменшено іконку
+            child: Icon(icon, color: col, size: 20)));
   }
 
   Widget _chip(String key, [String? label, IconData? icon, Color? iconColor]) {
@@ -558,8 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(
-            horizontal: 18, vertical: 10), // Компактніші фільтри
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
             color: AppColors.bg,
             borderRadius: BorderRadius.circular(20),
@@ -593,16 +668,14 @@ class _HomeScreenState extends State<HomeScreen> {
           if (icon != null) ...[
             Icon(icon,
                 size: 16,
-                color: active
-                    ? AppColors.accent
-                    : (iconColor ?? Colors.grey)), // Менші іконки
+                color: active ? AppColors.accent : (iconColor ?? Colors.grey)),
             const SizedBox(width: 6)
           ],
           Text(label ?? key,
               style: TextStyle(
                   color: active ? AppColors.accent : Colors.grey,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14)), // Менший шрифт
+                  fontSize: 14)),
         ]),
       ),
     );
@@ -618,8 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
       color = Colors.orangeAccent;
     }
     return Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 8, vertical: 3), // Менші відступи
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
             color: color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(8),
@@ -629,20 +701,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: color,
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
-                letterSpacing: 0.5))); // Шрифт 10
+                letterSpacing: 0.5)));
   }
 
-  Widget _buildInventoryBadge() {
+  // 🔥 ОНОВЛЕНИЙ ВІДЖЕТ ДЛЯ БІРКИ ТИПУ 🔥
+  Widget _buildTypeBadge(bool isInventory, Color color) {
+    String label = isInventory ? "ІНВЕНТАР" : "РЕЧІ";
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-            color: Colors.purpleAccent.withOpacity(0.15),
+            color: color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-                color: Colors.purpleAccent.withOpacity(0.5), width: 1)),
-        child: const Text("ІНВЕНТАР",
+            border: Border.all(color: color.withOpacity(0.5), width: 1)),
+        child: Text(label,
             style: TextStyle(
-                color: Colors.purpleAccent,
+                color: color,
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
                 letterSpacing: 0.5)));
@@ -654,15 +727,17 @@ class _HomeScreenState extends State<HomeScreen> {
     String name = item['name'] ?? "No Name";
     String cat = item['category'] ?? "";
     String wh = item['warehouse'] ?? "";
+
     var rawIsInv = item['is_inventory'];
-    bool flagCheck =
-        (rawIsInv == 1) || (rawIsInv == true) || (rawIsInv.toString() == "1");
-    bool isInventory = flagCheck || (item['item_type'] == "Інвентар");
+    bool isInventory = (rawIsInv == 1) ||
+        (rawIsInv == true) ||
+        (rawIsInv.toString() == "1") ||
+        (item['item_type'] == "Інвентар");
     String rawDate = item['date_added']?.toString() ?? "";
     String date = (rawDate.length >= 10) ? rawDate.substring(0, 10) : rawDate;
-    IconData typeIcon =
-        isInventory ? Icons.handyman_rounded : Icons.checkroom_rounded;
-    Color typeColor = isInventory ? Colors.purpleAccent : AppColors.accentBlue;
+
+    IconData typeIcon = SmartIcons.getIcon(isInventory);
+    Color typeColor = SmartIcons.getColor(isInventory);
 
     return Dismissible(
       key: ValueKey("${item['local_id']}_dismiss"),
@@ -704,12 +779,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.fastOutSlowIn,
-          margin: const EdgeInsets.only(
-              bottom: 15), // Зменшено відступ між картками
-          padding: const EdgeInsets.all(16), // Менший падінг всередині картки
+          margin: const EdgeInsets.only(bottom: 15),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
               color: AppColors.bg,
-              borderRadius: BorderRadius.circular(20), // Менш "круглі" картки
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: expanded
+                      ? typeColor.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.02),
+                  width: 1.5),
               boxShadow: [
                 BoxShadow(
                     color: AppColors.shadowBottom,
@@ -719,17 +798,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.shadowTop,
                     offset: const Offset(-4, -4),
                     blurRadius: 10)
-              ],
-              border: expanded
-                  ? Border.all(color: typeColor.withOpacity(0.5), width: 1.5)
-                  : Border.all(
-                      color: Colors.white.withOpacity(0.02), width: 1.5)),
+              ]),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(10), // Зменшено іконку товару
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                       color: typeColor.withOpacity(0.1),
                       shape: BoxShape.circle),
@@ -742,8 +817,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                             color: AppColors.textMain,
                             fontSize: 16,
-                            fontWeight: FontWeight.bold), // Шрифт 16
-                        maxLines: 2, // Оптимально 2 рядки для компактності
+                            fontWeight: FontWeight.bold),
+                        maxLines: 2,
                         softWrap: true,
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
@@ -752,7 +827,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          if (isInventory) _buildInventoryBadge(),
+                          // 🔥 ТУТ ВИКЛИКАЄТЬСЯ НОВА УНІВЕРСАЛЬНА БІРКА 🔥
+                          _buildTypeBadge(isInventory, typeColor),
                           _buildCategoryBadge(cat),
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -776,7 +852,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ])
                   ])),
               Container(
-                  width: 45, // Зменшено індикатор
+                  width: 45,
                   height: 45,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -796,13 +872,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                           color: total == 0 ? Colors.redAccent : typeColor,
                           fontWeight: FontWeight.w900,
-                          fontSize: 16))), // Шрифт 16
+                          fontSize: 16))),
             ]),
             if (expanded) ...[
               const SizedBox(height: 15),
               Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
               const SizedBox(height: 12),
-              _controlPanel(item, total, isInventory),
+              _controlPanel(item, total, isInventory, typeColor),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                 const Icon(Icons.calendar_today_rounded,
@@ -821,7 +897,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _controlPanel(Map<String, dynamic> item, int total, bool isInventory) {
+  Widget _controlPanel(
+      Map<String, dynamic> item, int total, bool isInventory, Color typeColor) {
     Map<String, dynamic> sizes = _parseSizeSafe(item['size_data']);
 
     if (sizes.isEmpty) {
@@ -833,6 +910,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onMinusLong: () => _showBulkDialog(item, null, false),
           onPlusLong: () => _showBulkDialog(item, null, true),
           isInv: isInventory,
+          color: typeColor,
           icon: isInventory ? Icons.build_rounded : Icons.checkroom_rounded);
     }
     if (sizes.length == 1) {
@@ -845,6 +923,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onPlus: () => _updateQuantity(item, key, 1),
           onMinusLong: () => _showBulkDialog(item, key, false),
           onPlusLong: () => _showBulkDialog(item, key, true),
+          color: typeColor,
           isInv: isInventory);
     }
     return GridView.builder(
@@ -852,7 +931,7 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.8, // Зробив блоки розмірів нижчими
+            childAspectRatio: 1.8,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12),
         itemCount: sizes.length,
@@ -879,7 +958,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                       color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14)), // Шрифт 14
+                      fontSize: 14)),
               const SizedBox(height: 6),
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 _bigBtn(
@@ -887,15 +966,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     () => _updateQuantity(item, key, -1),
                     () => _showBulkDialog(item, key, false),
                     isInventory,
+                    color: typeColor,
                     small: true),
                 Text("$val",
                     style: TextStyle(
                         color: val == 0 ? Colors.grey : AppColors.textMain,
                         fontSize: 16,
-                        fontWeight: FontWeight.w900)), // Шрифт 16
+                        fontWeight: FontWeight.w900)),
                 _bigBtn(Icons.add_rounded, () => _updateQuantity(item, key, 1),
                     () => _showBulkDialog(item, key, true), isInventory,
-                    small: true)
+                    color: typeColor, small: true)
               ])
             ]),
           );
@@ -910,10 +990,11 @@ class _HomeScreenState extends State<HomeScreen> {
       required VoidCallback onMinusLong,
       required VoidCallback onPlusLong,
       required bool isInv,
+      required Color color,
       IconData? icon}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16), // Зменшено
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
           color: AppColors.bg,
           borderRadius: BorderRadius.circular(20),
@@ -937,17 +1018,18 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                   color: AppColors.textMain,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16)) // Шрифт 16
+                  fontSize: 16))
         ]),
         const SizedBox(height: 15),
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          _bigBtn(Icons.remove_rounded, onMinus, onMinusLong, isInv),
+          _bigBtn(Icons.remove_rounded, onMinus, onMinusLong, isInv,
+              color: color),
           Text("$val",
               style: TextStyle(
                   color: val == 0 ? Colors.redAccent : AppColors.textMain,
                   fontSize: 24,
-                  fontWeight: FontWeight.w900)), // Шрифт 24
-          _bigBtn(Icons.add_rounded, onPlus, onPlusLong, isInv)
+                  fontWeight: FontWeight.w900)),
+          _bigBtn(Icons.add_rounded, onPlus, onPlusLong, isInv, color: color)
         ])
       ]),
     );
@@ -955,8 +1037,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _bigBtn(
       IconData icon, VoidCallback onTap, VoidCallback onLongPress, bool isInv,
-      {bool small = false}) {
-    double size = small ? 35 : 45; // Зробив кнопки компактними, але зручними
+      {bool small = false, Color? color}) {
+    double size = small ? 35 : 45;
     return InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
@@ -978,8 +1060,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       blurRadius: 5)
                 ]),
             child: Icon(icon,
-                color: isInv ? Colors.purpleAccent : AppColors.accent,
-                size: size * 0.5)));
+                color: color ?? AppColors.accent, size: size * 0.5)));
   }
 
   void _showBulkDialog(Map<String, dynamic> item, String? sizeKey, bool isAdd) {
@@ -1203,8 +1284,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: isActive ? color.withOpacity(0.3) : Colors.transparent)),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 0), // Компактніше меню
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         leading: Icon(icon, color: isActive ? color : Colors.grey, size: 24),
         title: Text(title,
             style: TextStyle(
@@ -1238,7 +1318,7 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
                   : null),
           child: child);
   @override
-  double get maxExtent => 60; // Зменшена висота панелі фільтрів
+  double get maxExtent => 60;
   @override
   double get minExtent => 60;
   @override

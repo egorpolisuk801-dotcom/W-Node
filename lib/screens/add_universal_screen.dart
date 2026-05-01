@@ -6,6 +6,7 @@ import '../core/app_colors.dart';
 import '../services/db_service.dart';
 import '../core/user_config.dart';
 import '../core/notification_helper.dart';
+import '../core/smart_icons.dart'; // 🔥 ІМПОРТУЄМО НАШ НОВИЙ МОЗГ
 
 class AddUniversalScreen extends StatefulWidget {
   const AddUniversalScreen({super.key});
@@ -18,6 +19,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _simpleQtyCtrl = TextEditingController();
+
+  // 🔥 Змінні для живої іконки
+  IconData _currentSmartIcon = Icons.inventory_2_rounded;
+  Color _currentIconColor = Colors.blueAccent;
 
   // --- ДАННЫЕ СЕТОК ---
   final List<String> _digitsRows = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -39,7 +44,6 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "68",
     "70"
   ];
-
   final List<String> _lettersRows = ["XS", "S", "M", "R", "L", "XL"];
   final List<String> _lettersCols = [
     "XS",
@@ -51,9 +55,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "3XL",
     "4XL"
   ];
-
   final List<String> _shoesCols = List.generate(18, (i) => "${35 + i}");
-
   final List<String> _hatsCols = [
     "54",
     "55",
@@ -74,10 +76,8 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "62-63"
   ];
   final List<String> _hatsWideCols = ["54-56", "58-60", "62-64"];
-
   final List<String> _glovesCols = ["1", "2", "3", "4"];
   final List<String> _glovesSLCols = ["S", "M", "L", "XL"];
-
   final List<String> _linenCols = List.generate(15, (i) => "${42 + (i * 2)}");
 
   // --- СПИСОК ТИПОВ ---
@@ -93,11 +93,14 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     "Білизна",
     "Просте"
   ];
-
   final List<String> _invTypes = ["Букви", "Цифри", "Взуття", "ГУ (Діапазон)"];
 
   bool _isInventory = false;
+
+  // 🔥 НОВІ ЗМІННІ ДЛЯ СКЛАДІВ 🔥
+  List<String> _warehouses = [];
   String _selectedWh = "ООС";
+
   String _currentSubType = "Цифри";
   String _selectedRow = "1";
   String _selectedCategory = "I";
@@ -110,10 +113,48 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   @override
   void initState() {
     super.initState();
-    if (UserConfig().wh1Name.isNotEmpty) _selectedWh = UserConfig().wh1Name;
+    _loadWarehouses();
+
+    // 🔥 Слухаємо кожну літеру, яку вводить користувач
+    _nameCtrl.addListener(_updateSmartIcon);
   }
 
-  // 🔥 ОБНОВЛЕННАЯ ПРОВЕРКА ВИДИМОСТИ
+  // 🔥 МЕТОД ДЛЯ ЗАВАНТАЖЕННЯ СПИСКУ СКЛАДІВ З НАЛАШТУВАНЬ 🔥
+  void _loadWarehouses() {
+    final cfg = UserConfig();
+    try {
+      if (cfg.wh1Name.startsWith('[')) {
+        _warehouses = List<String>.from(jsonDecode(cfg.wh1Name));
+      } else {
+        _warehouses =
+            [cfg.wh1Name, cfg.wh2Name].where((e) => e.isNotEmpty).toList();
+      }
+    } catch (e) {
+      _warehouses = ["ООС", "ППД"];
+    }
+
+    if (_warehouses.isEmpty) _warehouses = ["ООС", "ППД"];
+    _selectedWh = _warehouses.first; // За замовчуванням вибираємо перший склад
+  }
+
+  @override
+  void dispose() {
+    // 🔥 Обов'язково чистимо пам'ять при виході
+    _nameCtrl.removeListener(_updateSmartIcon);
+    _nameCtrl.dispose();
+    _locationCtrl.dispose();
+    _simpleQtyCtrl.dispose();
+    super.dispose();
+  }
+
+  // 🔥 Метод для оновлення іконки на льоту
+  void _updateSmartIcon() {
+    setState(() {
+      _currentSmartIcon = SmartIcons.getIconForName(_nameCtrl.text);
+      _currentIconColor = SmartIcons.getColorForIcon(_currentSmartIcon);
+    });
+  }
+
   bool _shouldShowType(String type) {
     final cfg = UserConfig();
     if (_isInventory) return true;
@@ -128,7 +169,6 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
         return cfg.itemShowHats;
       case "ГУ (Діапазон)":
         return cfg.itemShowHatsR;
-      // 🔥 Новые
       case "ГУ (Широкі)":
         return cfg.itemShowHatsW;
       case "Рукавички":
@@ -291,11 +331,18 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             ),
             const SizedBox(height: 20),
             _sectionHeader("Інформація"),
-            _neuTextField(_nameCtrl, "Назва"),
+
+            // 🔥 ВИКЛИКАЄМО ТЕКСТОВЕ ПОЛЕ З ІКОНКОЮ
+            _neuTextField(_nameCtrl, "Назва (напр. Футболка)",
+                icon: _currentSmartIcon, iconColor: _currentIconColor),
             const SizedBox(height: 10),
-            _neuTextField(_locationCtrl, "Місце"),
+
+            _neuTextField(_locationCtrl, "Місце (напр. Полиця 2)"),
             const SizedBox(height: 10),
+
+            // 🔥 ОНОВЛЕНИЙ СЕЛЕКТОР СКЛАДІВ 🔥
             _whSelector(),
+
             const SizedBox(height: 20),
             Row(children: [
               Expanded(
@@ -662,22 +709,54 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                     fontSize: 14))));
   }
 
+  // 🔥 ОНОВЛЕНИЙ ВІДЖЕТ ДЛЯ ВИБОРУ СКЛАДУ (Dropdown) 🔥
   Widget _whSelector() {
     return Container(
-        padding: const EdgeInsets.all(4),
-        decoration: _neuDeco(pressed: true),
-        child: Row(children: [
-          Expanded(
-              child: _neuSelectableBtn(
-                  UserConfig().wh1Name,
-                  _selectedWh == UserConfig().wh1Name,
-                  () => setState(() => _selectedWh = UserConfig().wh1Name))),
-          Expanded(
-              child: _neuSelectableBtn(
-                  UserConfig().wh2Name,
-                  _selectedWh == UserConfig().wh2Name,
-                  () => setState(() => _selectedWh = UserConfig().wh2Name)))
-        ]));
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.bg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.shadowTop,
+              offset: const Offset(2, 2),
+              blurRadius: 2,
+              spreadRadius: -1),
+          BoxShadow(
+              color: AppColors.shadowBottom,
+              offset: const Offset(-2, -2),
+              blurRadius: 2,
+              spreadRadius: -1)
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedWh,
+          icon: Icon(Icons.arrow_drop_down_rounded,
+              color: AppColors.accentBlue, size: 30),
+          dropdownColor: AppColors.bg,
+          isExpanded: true,
+          style: TextStyle(
+              color: AppColors.textMain,
+              fontSize: 15,
+              fontWeight: FontWeight.bold),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedWh = newValue;
+              });
+            }
+          },
+          items: _warehouses.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text("Склад: $value"),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   Widget _neuSelectableBtn(String text, bool active, VoidCallback onTap) {
@@ -743,8 +822,9 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
         ]));
   }
 
+  // 🔥 ПРОКАЧАНИЙ ВІДЖЕТ: Тепер приймає іконку
   Widget _neuTextField(TextEditingController ctrl, String hint,
-      {bool isNum = false}) {
+      {bool isNum = false, IconData? icon, Color? iconColor}) {
     return Container(
         decoration: BoxDecoration(
             color: AppColors.bg,
@@ -761,7 +841,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                   blurRadius: 2,
                   spreadRadius: -1)
             ]),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: TextField(
             controller: ctrl,
             keyboardType: isNum ? TextInputType.number : TextInputType.text,
@@ -770,9 +850,14 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.bold),
             decoration: InputDecoration(
+                prefixIcon: icon != null
+                    ? Icon(icon, color: iconColor ?? AppColors.accent)
+                    : null,
                 hintText: hint,
                 filled: false,
                 border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                    vertical: 15, horizontal: icon != null ? 0 : 10),
                 hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)))));
   }
 

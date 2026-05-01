@@ -1,7 +1,7 @@
 name: w_node
 description: Warehouse Inventory Application
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.5+1 # 🔥 ОСЬ ТУТ МИ ЗМІНИЛИ ВЕРСІЮ 🔥
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -24,6 +24,9 @@ dependencies:
   cupertino_icons: ^1.0.6
   path_provider: ^2.1.2
   vibration: 3.1.5
+  supabase_flutter: ^2.12.0
+  package_info_plus: ^9.0.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -40,7 +43,7 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icon.png"
-  # 🔥 Додаємо адаптивні шари для Android 8+ (Samsung Fix)
+  # 🔥 Адаптивні шари для Android 8+ (Samsung Fix)
   adaptive_icon_background: "#121212"
   adaptive_icon_foreground: "assets/icon.png"
   min_sdk_android: 21
