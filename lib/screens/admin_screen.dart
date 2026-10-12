@@ -11,7 +11,7 @@ import '../core/camo_button.dart';
 
 /// Адмінка на телефоні: ті самі пристрої і термінал, що на Mac і Windows.
 class AdminScreen extends StatefulWidget {
-  AdminScreen({super.key});
+  const AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
