@@ -2,7 +2,7 @@ name: Build W-Node for iOS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "ios-sideload" ]
   workflow_dispatch:
 
 jobs:
