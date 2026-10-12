@@ -191,17 +191,17 @@ class _LogsScreenState extends State<LogsScreen> {
     }
 
     String type = (log['action_type'] ?? "").toString().toLowerCase();
-    Color color = Colors.blue;
+    Color color = const Color(0xFFC4B07A);
     IconData actionIcon = Icons.info_outline;
 
     if (type.contains("переміщ")) {
-      color = const Color(0xFF38BDF8);
+      color = const Color(0xFFC4B07A);
       actionIcon = Icons.swap_horiz_rounded;
     } else if (type.contains("додано") || type.contains("створено")) {
-      color = const Color(0xFF00E676);
+      color = const Color(0xFF8FA86A);
       actionIcon = Icons.add_circle;
     } else if (type.contains("видал") || type.contains("вилучено")) {
-      color = const Color(0xFFFF3D00);
+      color = const Color(0xFFA87848);
       actionIcon = Icons.remove_circle;
     } else if (type.contains("зміна") || type.contains("редаг")) {
       color = AppColors.sun;

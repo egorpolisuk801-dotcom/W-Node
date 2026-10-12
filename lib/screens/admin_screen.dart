@@ -372,7 +372,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ),
       child: const Text('W',
           style: TextStyle(
-              color: Color(0xFF06202C),
+              color: Color(0xFF1A140C),
               fontSize: 26,
               fontWeight: FontWeight.w800)),
     );
@@ -385,13 +385,13 @@ class _AdminScreenState extends State<AdminScreen> {
       decoration: BoxDecoration(
         color: live ? _live : const Color(0xFF243024),
         borderRadius: BorderRadius.circular(999),
-        border: live ? null : Border.all(color: const Color(0xFF3D5168)),
+        border: live ? null : Border.all(color: const Color(0xFF3A4632)),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: live ? const Color(0xFF06202C) : _text,
+          color: live ? const Color(0xFF1A140C) : _text,
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),
@@ -422,7 +422,7 @@ class _AdminScreenState extends State<AdminScreen> {
           const SizedBox(height: 8),
           Text(title,
               style: const TextStyle(
-                  color: Color(0xFFB7E6FF),
+                  color: Color(0xFFC6D36A),
                   fontSize: 12,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
@@ -541,7 +541,7 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             child: Text(letter,
                 style: const TextStyle(
-                    color: Color(0xFF06202C),
+                    color: Color(0xFF1A140C),
                     fontWeight: FontWeight.w800,
                     fontSize: 16)),
           ),

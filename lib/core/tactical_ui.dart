@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -65,32 +63,20 @@ class VolGlass extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         borderRadius: r,
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: AppColors.isDark
-                ? const Color(0x99000000)
-                : const Color(0x330B1520),
-            offset: const Offset(0, 14),
-            blurRadius: 24,
+            color: Color(0x66000000),
+            offset: Offset(0, 8),
+            blurRadius: 14,
             spreadRadius: -6,
-          ),
-          BoxShadow(
-            color: AppColors.isDark
-                ? const Color(0x22FFFFFF)
-                : const Color(0x99FFFFFF),
-            offset: const Offset(0, -1),
-            blurRadius: 0,
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: r,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: CustomPaint(
-            painter: _BevelPainter(radius: radius, glow: glow),
-            child: Padding(padding: padding, child: child),
-          ),
+        child: CustomPaint(
+          painter: _WoodlandPanelPainter(radius: radius, glow: glow),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -105,85 +91,69 @@ class VolGlass extends StatelessWidget {
   }
 }
 
-class _BevelPainter extends CustomPainter {
+class _WoodlandPanelPainter extends CustomPainter {
   final double radius;
   final Color? glow;
-  _BevelPainter({required this.radius, this.glow});
+  _WoodlandPanelPainter({required this.radius, this.glow});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final r = RRect.fromRectAndRadius(rect, Radius.circular(radius));
     final light = !AppColors.isDark;
-    final tint = AppColors.glassTint;
-    canvas.drawRRect(
-      r,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: light
-              ? [
-                  tint.withOpacity(0.45),
-                  tint.withOpacity(0.25),
-                  tint.withOpacity(0.14),
-                ]
-              : [
-                  tint.withOpacity(0.10),
-                  Colors.white.withOpacity(0.04),
-                  const Color(0x66000000),
-                ],
-          stops: const [0.0, 0.48, 1.0],
-        ).createShader(rect),
-    );
     canvas.save();
     canvas.clipRRect(r);
     canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height * 0.36),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            light ? tint.withOpacity(0.40) : tint.withOpacity(0.10),
-            const Color(0x00FFFFFF),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.36)),
+      rect,
+      Paint()..color = light ? const Color(0xFFE7D8BE) : const Color(0xFF1A2216),
+    );
+    final blotches = light
+        ? const [
+            Color(0x668A7848),
+            Color(0x553E5330),
+            Color(0x66C4B48A),
+            Color(0x445A4632),
+          ]
+        : const [
+            Color(0x663E5428),
+            Color(0x55241C16),
+            Color(0x556A5430),
+            Color(0x444A3828),
+          ];
+    const spots = <List<double>>[
+      [0.15, 0.30, 0.9, 1.1],
+      [0.82, 0.22, 0.7, 0.9],
+      [0.55, 0.78, 1.0, 0.7],
+      [0.08, 0.82, 0.6, 0.5],
+    ];
+    for (var i = 0; i < spots.length; i++) {
+      final s = spots[i];
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * s[0], size.height * s[1]),
+          width: size.width * s[2],
+          height: size.height * s[3],
+        ),
+        Paint()..color = blotches[i],
+      );
+    }
+    final bar = (glow ?? const Color(0xFF7FA04A));
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height - 3, size.width, 3),
+      Paint()..color = bar,
     );
     canvas.restore();
-
     canvas.drawRRect(
-      r.deflate(0.8),
+      r.deflate(0.6),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: light
-              ? [
-                  tint,
-                  tint.withOpacity(0.67),
-                  tint.withOpacity(0.40),
-                ]
-              : [
-                  tint.withOpacity(0.28),
-                  Colors.white.withOpacity(0.08),
-                  const Color(0x44000000),
-                ],
-        ).createShader(rect),
-    );
-    canvas.drawRRect(
-      r.deflate(3.2),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = const Color(0x22000000),
+        ..strokeWidth = 1.1
+        ..color = light ? const Color(0xFF8A7848) : const Color(0xFF3A4632),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _BevelPainter old) =>
+  bool shouldRepaint(covariant _WoodlandPanelPainter old) =>
       old.radius != radius || old.glow != glow;
 }
 
@@ -244,9 +214,8 @@ class _TacBackdropState extends State<TacBackdrop>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        (AppColors.isDark ? AppColors.glassTint : Colors.white)
-                            .withOpacity(AppColors.isDark ? 0.12 : 0.50),
-                        Colors.white.withOpacity(0),
+                        const Color(0xFF3E5428).withOpacity(0.55),
+                        const Color(0x00000000),
                       ],
                     ),
                   ),
@@ -576,15 +545,17 @@ class TacField {
           ? null
           : Icon(icon, color: AppColors.accent, size: 20),
       filled: true,
-      fillColor: AppColors.card.withOpacity(0.85),
+      fillColor: AppColors.isDark
+          ? const Color(0xFF141C12)
+          : const Color(0xFFF3E6CC),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF3A4632)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.accent, width: 1.3),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF7FA04A), width: 1.6),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -627,12 +598,12 @@ class _PixelTintPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final ink = Paint()
       ..color = AppColors.isDark
-          ? const Color(0x14FFFFFF)
-          : const Color(0x123A4554);
+          ? const Color(0x187FA04A)
+          : const Color(0x184A3820);
     final shade = Paint()
       ..color = AppColors.isDark
-          ? const Color(0x10000000)
-          : const Color(0x0A1A2430);
+          ? const Color(0x14A87848)
+          : const Color(0x123E5428);
     const step = 18.0;
     final shift = (t * step);
     for (double y = -step; y < size.height + step; y += step) {

@@ -170,7 +170,7 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
         final isChecked = activeSet.contains(itemId);
 
         Color whColor = Colors.grey;
-        if (warehouse.contains("ООС")) whColor = const Color(0xFF00E676);
+        if (warehouse.contains("ООС")) whColor = const Color(0xFF8FA86A);
         if (warehouse.contains("ППД")) whColor = const Color(0xFF2979FF);
 
         return TacCard(

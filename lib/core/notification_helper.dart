@@ -45,7 +45,7 @@ class NotificationHelper {
       channelDescription: 'Уведомления о фоновой синхронизации данных',
       importance: Importance.max,
       priority: Priority.high,
-      color: Color(0xFF00E676), // Твой зеленый цвет для иконки
+      color: Color(0xFF8FA86A),
       playSound: true,
     );
 

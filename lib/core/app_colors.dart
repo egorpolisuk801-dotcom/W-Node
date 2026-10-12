@@ -201,33 +201,17 @@ class AppColors {
   static BoxDecoration cardDeco({Color? borderColor, double radius = 22}) {
     final light = !isDark;
     return BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: light
-            ? [
-                glassTint.withOpacity(0.45),
-                glassTint.withOpacity(0.28),
-                glassTint.withOpacity(0.16),
-              ]
-            : [
-                glassTint.withOpacity(0.12),
-                Colors.white.withOpacity(0.05),
-                const Color(0x55000000),
-              ],
-        stops: const [0.0, 0.45, 1.0],
-      ),
+      color: light ? const Color(0xFFE7D8BE) : const Color(0xFF1A2216),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
           color: borderColor ??
-              Colors.white.withOpacity(light ? 0.85 : 0.28),
-          width: 1.2),
+              (light ? const Color(0xFF8A7848) : const Color(0xFF3A4632)),
+          width: 1.1),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x240B1520),
-          offset: Offset(0, 14),
-          blurRadius: 18,
-          spreadRadius: -8,
+          color: Color(0x66000000),
+          offset: Offset(0, 8),
+          blurRadius: 14,
         ),
       ],
     );
