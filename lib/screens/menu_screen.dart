@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/tactical_ui.dart';
 import '../core/fun_moments.dart';
 import 'settings_screen.dart';
@@ -47,7 +48,7 @@ class _MenuScreenState extends State<MenuScreen> {
             const SizedBox(height: 22),
             _tile(
               Icons.hub_rounded,
-              const Color(0xFFE39B5B),
+              CamoTone.olive,
               'Адмін',
               'Mac, Windows і цей телефон: зв’язок і оновлення без кабелю',
               () => Navigator.push(context,
@@ -55,7 +56,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.qr_code_scanner_rounded,
-              AppColors.accent,
+              CamoTone.moss,
               'Сканер QR',
               'Мішки й ящики: підтвердити, відхилити або змінити кількість',
               () => Navigator.push(context,
@@ -63,7 +64,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.checkroom_rounded,
-              AppColors.sun,
+              CamoTone.khaki,
               'Комплект 1 особі',
               'Зима / Літо / Видача на прізвище, з розмірами',
               () => Navigator.push(context,
@@ -71,7 +72,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.swap_horiz_rounded,
-              AppColors.accentBlue,
+              CamoTone.brown,
               'Переміщення між складами',
               'ООС ↔ ППД: списати з одного, зарахувати на інший',
               () => Navigator.push(context,
@@ -79,7 +80,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.ac_unit_rounded,
-              AppColors.ice,
+              CamoTone.deep,
               'Сезонні списки',
               'Що входить у Зиму, Літо і Видачу',
               () => Navigator.push(
@@ -89,7 +90,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.menu_book_rounded,
-              const Color(0xFFC45C26),
+              CamoTone.olive,
               'Норми',
               'СВ, ВМС, ПС, ДШВ, ССО: назва, строк, мирний і воєнний час',
               () => Navigator.push(
@@ -99,7 +100,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.tune_rounded,
-              AppColors.accent,
+              CamoTone.moss,
               'Норми видачі',
               'Скільки речей на 1 особу (для аналізу комплектів)',
               () => Navigator.push(
@@ -109,16 +110,14 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             _tile(
               Icons.analytics_rounded,
-              AppColors.isDark
-                  ? const Color(0xFF7DCEA0)
-                  : const Color(0xFF2E6B45),
+              CamoTone.khaki,
               'Аналіз комплектів',
               'Скільки осіб можна одягнути зараз',
               () => _openCalcPicker(),
             ),
             _tile(
               Icons.settings_rounded,
-              AppColors.accentBlue,
+              CamoTone.brown,
               'Налаштування',
               'Сервер, склади, розмірні сітки, тема',
               () => Navigator.push(context,
@@ -179,66 +178,88 @@ class _MenuScreenState extends State<MenuScreen> {
                     fontWeight: FontWeight.w800,
                     fontSize: 16)),
             const SizedBox(height: 12),
-            _calcBtn(ctx, 'Зима', 'winter', Icons.ac_unit_rounded, AppColors.ice),
-            _calcBtn(
-                ctx, 'Літо', 'summer', Icons.wb_sunny_rounded, AppColors.sun),
-            _calcBtn(ctx, 'Видача', 'inventory', Icons.handyman_rounded,
-                AppColors.silk),
+            CamoButton(
+              label: 'Зима',
+              icon: Icons.ac_unit_rounded,
+              tone: CamoTone.deep,
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CalculatorScreen(
+                            seasonKey: 'winter', seasonName: 'Зима')));
+              },
+            ),
+            const SizedBox(height: 8),
+            CamoButton(
+              label: 'Літо',
+              icon: Icons.wb_sunny_rounded,
+              tone: CamoTone.khaki,
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CalculatorScreen(
+                            seasonKey: 'summer', seasonName: 'Літо')));
+              },
+            ),
+            const SizedBox(height: 8),
+            CamoButton(
+              label: 'Видача',
+              icon: Icons.handyman_rounded,
+              tone: CamoTone.moss,
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CalculatorScreen(
+                            seasonKey: 'inventory', seasonName: 'Видача')));
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _calcBtn(BuildContext ctx, String name, String key, IconData icon,
-      Color color) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(name,
-          style: TextStyle(
-              color: AppColors.textMain, fontWeight: FontWeight.bold)),
-      trailing: Icon(Icons.chevron_right_rounded, color: AppColors.muted),
-      onTap: () {
-        Navigator.pop(ctx);
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) =>
-                    CalculatorScreen(seasonKey: key, seasonName: name)));
-      },
-    );
-  }
-
-  Widget _tile(IconData icon, Color color, String title, String subtitle,
+  Widget _tile(IconData icon, CamoTone tone, String title, String subtitle,
       VoidCallback onTap) {
-    return TacCard(
-      accent: color,
-      margin: const EdgeInsets.only(bottom: 10),
-      onTap: onTap,
-      child: Row(
+    const ink = Color(0xFFF4F0E4);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: CamoPlate(
+        tone: tone,
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
           children: [
-            TacIconBox(icon: icon, color: color),
-            const SizedBox(width: 14),
+            Icon(icon, color: ink, size: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: TextStyle(
-                          color: AppColors.textMain,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
-                          fontSize: 14)),
-                  const SizedBox(height: 4),
+                      style: const TextStyle(
+                          color: ink,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15)),
+                  const SizedBox(height: 3),
                   Text(subtitle,
-                      style:
-                          TextStyle(color: AppColors.muted, fontSize: 12)),
+                      style: TextStyle(
+                          color: ink.withOpacity(0.78),
+                          fontSize: 12,
+                          height: 1.25)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: AppColors.accent),
+            const Icon(Icons.chevron_right_rounded, color: ink),
           ],
         ),
+      ),
     );
   }
 

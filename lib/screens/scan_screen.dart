@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/user_config.dart';
 import '../services/db_service.dart';
 import '../services/last_action.dart';
@@ -206,9 +207,12 @@ class _ScanScreenState extends State<ScanScreen> {
                             },
                           ),
                   ),
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Відхилити')),
+                  CamoButton(
+                    label: 'Відхилити',
+                    tone: CamoTone.deep,
+                    compact: true,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
                 ],
               ),
             ),
@@ -378,23 +382,19 @@ class _ScanScreenState extends State<ScanScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: CamoButton(
+                          label: 'Відхилити',
+                          tone: CamoTone.deep,
+                          compact: true,
                           onPressed: () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.muted,
-                              side: BorderSide(color: AppColors.border),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              minimumSize: const Size(0, 48)),
-                          child: const Text('Відхилити',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w800, fontSize: 12)),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton(
+                        child: CamoButton(
+                          label: 'Змінити\nкількість',
+                          tone: CamoTone.khaki,
+                          compact: true,
                           onPressed: locked
                               ? null
                               : () async {
@@ -402,59 +402,26 @@ class _ScanScreenState extends State<ScanScreen> {
                                   if (d == null || d == 0) return;
                                   Navigator.pop(ctx, d);
                                 },
-                          style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.accentBlue,
-                              side: BorderSide(color: AppColors.accentBlue),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              minimumSize: const Size(0, 48)),
-                          child: const Text('Змінити\nкількість',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 11,
-                                  height: 1.15)),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: ElevatedButton(
+                        child: CamoButton(
+                          label: locked ? 'Вибери\nрозмір' : 'Підтвердити',
+                          tone: CamoTone.olive,
+                          compact: true,
                           onPressed:
                               locked ? null : () => Navigator.pop(ctx, -1),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: locked
-                                  ? AppColors.muted
-                                  : AppColors.accent,
-                              foregroundColor: AppColors.onAccent,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              minimumSize: const Size(0, 48)),
-                          child: Text(locked ? 'Вибери\nрозмір' : 'Підтвердити',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w900, fontSize: 12)),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(ctx, 'transfer'),
-                      icon: Icon(Icons.swap_horiz_rounded,
-                          color: AppColors.accentBlue, size: 18),
-                      label: Text('На інший склад',
-                          style: TextStyle(
-                              color: AppColors.accentBlue,
-                              fontWeight: FontWeight.w800)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.accentBlue),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4)),
-                      ),
-                    ),
+                  CamoButton(
+                    label: 'На інший склад',
+                    icon: Icons.swap_horiz_rounded,
+                    tone: CamoTone.brown,
+                    onPressed: () => Navigator.pop(ctx, 'transfer'),
                   ),
                 ],
               ),
@@ -557,15 +524,20 @@ class _ScanScreenState extends State<ScanScreen> {
             ],
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dCtx),
-                child: const Text('Скасувати')),
-            ElevatedButton(
+            CamoButton(
+              label: 'Скасувати',
+              tone: CamoTone.deep,
+              compact: true,
+              onPressed: () => Navigator.pop(dCtx),
+            ),
+            CamoButton(
+              label: 'Гаразд',
+              tone: CamoTone.olive,
+              compact: true,
               onPressed: () {
                 final n = int.tryParse(ctrl.text) ?? 0;
                 Navigator.pop(dCtx, issue ? -n.abs() : n.abs());
               },
-              child: const Text('Гаразд'),
             ),
           ],
         ),
@@ -685,7 +657,12 @@ class _ScanScreenState extends State<ScanScreen> {
                                 },
                               ),
                       ),
-                      OutlinedButton.icon(
+                      CamoButton(
+                        label: q.trim().length < 2
+                            ? 'Введи ПІБ у пошук, щоб додати'
+                            : 'Додати «${q.trim()}»',
+                        icon: Icons.person_add_alt_1_rounded,
+                        tone: CamoTone.moss,
                         onPressed: () async {
                           final name = q.trim();
                           if (name.length < 2) return;
@@ -694,10 +671,6 @@ class _ScanScreenState extends State<ScanScreen> {
                           UserConfig().setLastIssuePerson(name);
                           if (ctx.mounted) Navigator.pop(ctx);
                         },
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: Text(q.trim().length < 2
-                            ? 'Введи ПІБ у пошук, щоб додати'
-                            : 'Додати «${q.trim()}»'),
                       ),
                     ],
                   ),

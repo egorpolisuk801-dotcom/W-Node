@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/shell_controller.dart';
 import '../core/tactical_ui.dart';
 import 'dashboard_screen.dart';
@@ -68,36 +68,25 @@ class _MainShellState extends State<MainShell> {
                 final on = _index == i;
                 final tab = _tabs[i];
                 return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _index = i);
-                      ShellController.tab.value = i;
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: CamoPlate(
+                      tone: CamoTone.values[i],
+                      dim: !on,
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: on ? AppColors.metal : null,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      onTap: () {
+                        setState(() => _index = i);
+                        ShellController.tab.value = i;
+                      },
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          AnimatedScale(
-                            scale: on ? 1.08 : 1,
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOut,
-                            child: Icon(on ? tab.$2 : tab.$1,
-                                color: on ? AppColors.textMain : AppColors.muted,
-                                size: 22),
-                          ),
-                          const SizedBox(height: 4),
+                          Icon(on ? tab.$2 : tab.$1,
+                              color: const Color(0xFFF4F0E4), size: 20),
+                          const SizedBox(height: 3),
                           Text(tab.$3,
-                              style: TextStyle(
-                                  color: on
-                                      ? AppColors.textMain
-                                      : AppColors.muted,
+                              style: const TextStyle(
+                                  color: Color(0xFFF4F0E4),
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11)),
                         ],

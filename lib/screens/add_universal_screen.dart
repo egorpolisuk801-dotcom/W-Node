@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:convert';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../services/db_service.dart';
 import '../core/user_config.dart';
 import '../core/notification_helper.dart';
@@ -175,20 +176,22 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             style: TextStyle(color: AppColors.textMain)),
         content: _neuTextField(qtyCtrl, "0", isNum: true),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child:
-                  Text("Скасувати", style: TextStyle(color: AppColors.muted))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+          CamoButton(
+            label: 'Скасувати',
+            tone: CamoTone.deep,
+            compact: true,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          CamoButton(
+            label: 'ОК',
+            tone: CamoTone.olive,
+            compact: true,
             onPressed: () {
               int? val = int.tryParse(qtyCtrl.text);
               if (val != null) setState(() => _quantities[key] = val);
               Navigator.pop(ctx);
             },
-            child: Text("ОК",
-                style: TextStyle(color: AppColors.onAccent)),
-          )
+          ),
         ],
       ),
     );

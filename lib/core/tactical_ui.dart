@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'app_colors.dart';
+import 'camo_button.dart';
 
 class TacStyle {
   static const radius = 20.0;
@@ -394,24 +395,21 @@ class TacChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VolGlass(
-      radius: 28,
+    return CamoPlate(
+      tone: active ? CamoTone.olive : CamoTone.deep,
+      dim: !active,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      glow: active ? AppColors.accent : null,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
+      onTap: onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 15, color: AppColors.textMain),
+            Icon(icon, size: 15, color: const Color(0xFFF4F0E4)),
             const SizedBox(width: 6),
           ],
           Text(label,
-              style: TextStyle(
-                  color: AppColors.textMain,
+              style: const TextStyle(
+                  color: Color(0xFFF4F0E4),
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 0.2)),
@@ -427,6 +425,7 @@ class TacButton extends StatelessWidget {
   final Color? color;
   final IconData? icon;
   final bool filled;
+  final CamoTone? tone;
   const TacButton({
     super.key,
     required this.label,
@@ -434,35 +433,27 @@ class TacButton extends StatelessWidget {
     this.color,
     this.icon,
     this.filled = true,
+    this.tone,
   });
+
+  CamoTone get _tone {
+    if (tone != null) return tone!;
+    if (!filled) return CamoTone.moss;
+    final c = color;
+    if (c == null) return CamoTone.olive;
+    if (c == AppColors.danger) return CamoTone.deep;
+    if (c == AppColors.accentBlue || c == AppColors.sun) return CamoTone.khaki;
+    if (c == AppColors.warning) return CamoTone.brown;
+    return CamoTone.olive;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.accent;
-    final fg = filled ? AppColors.textMain : c;
-    return VolGlass(
-      radius: 22,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      glow: filled ? c : null,
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, color: fg, size: 20),
-            const SizedBox(width: 8),
-          ],
-          Text(label,
-              style: TextStyle(
-                  color: fg,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  letterSpacing: 0.4)),
-        ],
-      ),
+    return CamoButton(
+      label: label,
+      icon: icon,
+      tone: _tone,
+      onPressed: onTap,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/admin_link.dart';
+import '../core/camo_button.dart';
 
 /// Адмінка на телефоні: ті самі пристрої і термінал, що на Mac і Windows.
 class AdminScreen extends StatefulWidget {
@@ -23,13 +24,13 @@ class _AdminScreenState extends State<AdminScreen> {
   bool _downloading = false;
   double _progress = 0;
 
-  static const _bg = Color(0xFF070A10);
-  static const _card = Color(0xFF161D29);
-  static const _border = Color(0xFF2A384C);
-  static const _copper = Color(0xFF79D4FF);
-  static const _text = Color(0xFFF4F8FC);
-  static const _muted = Color(0xFF8FA0B5);
-  static const _live = Color(0xFF5EE0A0);
+  static const _bg = Color(0xFF10140F);
+  static const _card = Color(0xFF1A2218);
+  static const _border = Color(0xFF3A4632);
+  static const _copper = Color(0xFFC6D36A);
+  static const _text = Color(0xFFF3F0E6);
+  static const _muted = Color(0xFFA8B09A);
+  static const _live = Color(0xFF8FA86A);
   int _seenLines = 0;
   bool _armed = false;
 
@@ -152,7 +153,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF0B1018),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF2A384C)),
+                  border: Border.all(color: const Color(0xFF3A4632)),
                 ),
                 child: lines.isEmpty
                     ? const Text('Спільний термінал з Mac і Windows.',
@@ -286,7 +287,7 @@ class _AdminScreenState extends State<AdminScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF121A24),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: offer ? _copper : const Color(0xFF2A384C)),
+        border: Border.all(color: offer ? _copper : const Color(0xFF3A4632)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +306,7 @@ class _AdminScreenState extends State<AdminScreen> {
             LinearProgressIndicator(
               value: _progress == 0 ? null : _progress,
               color: _copper,
-              backgroundColor: const Color(0xFF2A384C),
+              backgroundColor: const Color(0xFF2A3824),
             ),
           ],
           if (Platform.isAndroid) ...[
@@ -382,7 +383,7 @@ class _AdminScreenState extends State<AdminScreen> {
       constraints: const BoxConstraints(maxWidth: 132),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: live ? _live : const Color(0xFF1A2433),
+        color: live ? _live : const Color(0xFF243024),
         borderRadius: BorderRadius.circular(999),
         border: live ? null : Border.all(color: const Color(0xFF3D5168)),
       ),
@@ -405,7 +406,7 @@ class _AdminScreenState extends State<AdminScreen> {
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2A384C)),
+        border: Border.all(color: const Color(0xFF3A4632)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,7 +518,7 @@ class _AdminScreenState extends State<AdminScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1C2533),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: online ? const Color(0xFF2A384C) : _border),
+        border: Border.all(color: online ? const Color(0xFF3A4632) : _border),
       ),
       child: Row(
         children: [
@@ -525,7 +526,7 @@ class _AdminScreenState extends State<AdminScreen> {
             width: 5,
             height: 64,
             decoration: BoxDecoration(
-              color: online ? _live : const Color(0xFF2A384C),
+              color: online ? _live : const Color(0xFF3A4632),
               borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
             ),
           ),
@@ -642,7 +643,7 @@ class _AdminScreenState extends State<AdminScreen> {
       child: Text.rich(TextSpan(children: [
         TextSpan(
             text: '${raw['t'] ?? ''}  ',
-            style: const TextStyle(color: Color(0xFF6E7C8C), fontSize: 12)),
+            style: const TextStyle(color: Color(0xFF8E9884), fontSize: 12)),
         TextSpan(
             text: '$name  ',
             style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12)),
@@ -656,9 +657,9 @@ class _AdminScreenState extends State<AdminScreen> {
   InputDecoration _field(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF6E7C8C)),
+      hintStyle: const TextStyle(color: Color(0xFF8E9884)),
       filled: true,
-      fillColor: const Color(0xFF0C121A),
+      fillColor: const Color(0xFF121810),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -676,24 +677,11 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Widget _copperButton(String label, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap == null
-          ? null
-          : () {
-              HapticFeedback.selectionClick();
-              onTap();
-            },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: onTap == null ? const Color(0xFF1A2433) : _copper,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Text(label,
-            style: TextStyle(
-                color: onTap == null ? const Color(0xFF6E7C8C) : const Color(0xFF06202C),
-                fontWeight: FontWeight.w800)),
-      ),
+    return CamoButton(
+      label: label,
+      onPressed: onTap,
+      tone: CamoToneData.cycle(label.hashCode),
+      compact: true,
     );
   }
 }

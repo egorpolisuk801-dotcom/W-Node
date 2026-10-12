@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/db_service.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/log_utils.dart';
 import '../core/tactical_ui.dart';
 import '../core/fun_moments.dart';
@@ -423,22 +424,21 @@ class _LogsScreenState extends State<LogsScreen> {
             "Видалити всю історію операцій? Цю дію неможливо скасувати.",
             style: TextStyle(color: Colors.grey)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Скасувати",
-                  style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-              onPressed: () {
-                Navigator.pop(ctx);
-                _clearLogs();
-              },
-              child: const Text("Видалити",
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold))),
+          CamoButton(
+            label: 'Скасувати',
+            tone: CamoTone.moss,
+            compact: true,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          CamoButton(
+            label: 'Видалити',
+            tone: CamoTone.brown,
+            compact: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              _clearLogs();
+            },
+          ),
         ],
       ),
     );

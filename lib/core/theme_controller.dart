@@ -25,13 +25,13 @@ class AppThemeId {
   static String hint(String id) {
     switch (id) {
       case light:
-        return 'Тепле скло';
+        return 'Світлий хакі';
       case corporate:
-        return 'Оливкове скло';
+        return 'Мох';
       case tactical:
-        return 'Нічне скло';
+        return 'Нічний ліс';
       default:
-        return 'Холодне скло';
+        return 'Лісовий камуфляж';
     }
   }
 }

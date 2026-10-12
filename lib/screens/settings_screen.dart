@@ -135,8 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dbname: _dbNameCtrl.text.trim(),
       w1: jsonEncode(_warehouses),
       w2: "",
-      darkMode: _themeId == AppThemeId.corporate ||
-          _themeId == AppThemeId.tactical,
+      darkMode: _themeId != AppThemeId.light,
       iDig: _iDig,
       iLet: _iLet,
       iShoe: _iShoe,
@@ -576,8 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () {
               setState(() {
                 _themeId = id;
-                _isDark = id == AppThemeId.corporate ||
-                    id == AppThemeId.tactical;
+                _isDark = id != AppThemeId.light;
               });
               ThemeController.set(id);
             },

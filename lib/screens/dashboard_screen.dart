@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/user_config.dart';
 import '../core/shell_controller.dart';
 import '../core/log_utils.dart';
@@ -230,8 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     TacButton(
                       label: 'Перемістити між складами',
                       icon: Icons.swap_horiz_rounded,
-                      color: AppColors.accentBlue,
-                      filled: false,
+                      tone: CamoTone.khaki,
                       onTap: () async {
                         await Navigator.push(
                             context,
@@ -666,7 +666,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Expanded(
           child: _actionBtn(Icons.qr_code_scanner_rounded, 'Сканер',
-              AppColors.accent, () async {
+              CamoTone.moss, () async {
             await Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ScanScreen()));
             if (mounted) _loadLocal();
@@ -674,7 +674,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _actionBtn(Icons.add_rounded, 'Додати', AppColors.accentBlue,
+          child: _actionBtn(Icons.add_rounded, 'Додати', CamoTone.khaki,
               () async {
             final res = await Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const AddUniversalScreen()));
@@ -684,30 +684,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: _actionBtn(Icons.inventory_2_outlined, 'Склад',
-              AppColors.silk, () => ShellController.go(1)),
+              CamoTone.brown, () => ShellController.go(1)),
         ),
       ],
     );
   }
 
   Widget _actionBtn(
-      IconData icon, String label, Color color, VoidCallback onTap) {
-    return TacCard(
-      accent: color,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 6),
-          Text(label.toUpperCase(),
-              style: TextStyle(
-                  color: AppColors.textMain,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  fontSize: 11)),
-        ],
-      ),
+      IconData icon, String label, CamoTone tone, VoidCallback onTap) {
+    return CamoButton(
+      label: label,
+      icon: icon,
+      tone: tone,
+      vertical: true,
+      onPressed: onTap,
     );
   }
 

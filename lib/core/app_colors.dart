@@ -35,72 +35,72 @@ class _Palette {
 }
 
 class AppColors {
-  /// Поле — холодне срібло.
+  /// Поле — нічний лісовий камуфляж.
   static const _hud = _Palette(
-    bg: Color(0xFFD5DCE6),
-    card: Color(0x73FFFFFF),
-    text: Color(0xFF1B2430),
-    muted: Color(0xFF4A5968),
-    accent: Color(0xFF243140),
-    accentBlue: Color(0xFF3E5368),
-    warning: Color(0xFF8A6A32),
-    danger: Color(0xFF8E3E38),
-    shadowTop: Color(0xFFFFFFFF),
-    shadowBottom: Color(0x33000000),
-    onAccent: Color(0xFFF7FAFC),
-    goldDeep: Color(0xFFB7C3D0),
-    goldLight: Color(0xF2FFFFFF),
+    bg: Color(0xFF121610),
+    card: Color(0xFF1C2418),
+    text: Color(0xFFF3F0E6),
+    muted: Color(0xFFA8B09A),
+    accent: Color(0xFF9AAE62),
+    accentBlue: Color(0xFFC4B07A),
+    warning: Color(0xFFC4A06A),
+    danger: Color(0xFF8C5A48),
+    shadowTop: Color(0x33FFFFFF),
+    shadowBottom: Color(0x88000000),
+    onAccent: Color(0xFFF4F1E6),
+    goldDeep: Color(0xFF2A3324),
+    goldLight: Color(0x66D7C49A),
   );
 
-  /// День — тепле пісочне скло, не копія Поля.
+  /// День — світлий хакі.
   static const _light = _Palette(
-    bg: Color(0xFFE6D7C2),
-    card: Color(0x73FFF6EA),
-    text: Color(0xFF2C2418),
-    muted: Color(0xFF6A5A46),
-    accent: Color(0xFF2F5A42),
-    accentBlue: Color(0xFF6A4E32),
-    warning: Color(0xFF8A5A28),
-    danger: Color(0xFF8E3E38),
+    bg: Color(0xFFE4D7C0),
+    card: Color(0xFFF3E8D4),
+    text: Color(0xFF241C14),
+    muted: Color(0xFF6E5E48),
+    accent: Color(0xFF3E5330),
+    accentBlue: Color(0xFF6A5438),
+    warning: Color(0xFF8A6230),
+    danger: Color(0xFF7A4038),
     shadowTop: Color(0xFFFFF8EE),
     shadowBottom: Color(0x33281810),
-    onAccent: Color(0xFFF8F3EA),
-    goldDeep: Color(0xFFCDB89A),
-    goldLight: Color(0xF2FFF6EA),
+    onAccent: Color(0xFFF7F1E6),
+    goldDeep: Color(0xFFC4B08A),
+    goldLight: Color(0xF2FFF8EC),
   );
 
-  /// Олива — скло з польовим відтінком.
+  /// Олива — мох.
   static const _corporate = _Palette(
-    bg: Color(0xFF1C221C),
-    card: Color(0x2EFFFFFF),
-    text: Color(0xFFE6EEE6),
-    muted: Color(0xFFA3B2A3),
-    accent: Color(0xFF9BBF8A),
-    accentBlue: Color(0xFFC5D4C0),
+    bg: Color(0xFF141A12),
+    card: Color(0xFF1E281C),
+    text: Color(0xFFE8F0E4),
+    muted: Color(0xFF9AAB96),
+    accent: Color(0xFF8FA86A),
+    accentBlue: Color(0xFFC6B48A),
     warning: Color(0xFFD2B48C),
-    danger: Color(0xFFD48980),
-    shadowTop: Color(0x55FFFFFF),
-    shadowBottom: Color(0x66000000),
-    onAccent: Color(0xFF142016),
-    goldDeep: Color(0xFF2A332A),
-    goldLight: Color(0x66FFFFFF),
+    danger: Color(0xFFC48A78),
+    shadowTop: Color(0x33FFFFFF),
+    shadowBottom: Color(0x88000000),
+    onAccent: Color(0xFFF4F1E6),
+    goldDeep: Color(0xFF24301E),
+    goldLight: Color(0x66C5D4B0),
   );
 
-  /// Нічне скло.
+  /// Ніч — майже чорний ліс.
   static const _tactical = _Palette(
-    bg: Color(0xFF121820),
-    card: Color(0x2EFFFFFF),
-    text: Color(0xFFE4EAF0),
-    muted: Color(0xFF93A4B5),
-    accent: Color(0xFF8FB4C8),
-    accentBlue: Color(0xFFD0DCE4),
-    warning: Color(0xFFD2B48C),
-    danger: Color(0xFFD48980),
-    shadowTop: Color(0x55FFFFFF),
-    shadowBottom: Color(0x66000000),
-    onAccent: Color(0xFF121820),
-    goldDeep: Color(0xFF24303A),
-    goldLight: Color(0x66FFFFFF),
+    bg: Color(0xFF0C100E),
+    card: Color(0xFF161C14),
+    text: Color(0xFFF2F0E8),
+    muted: Color(0xFF8E9888),
+    accent: Color(0xFF7E9458),
+    accentBlue: Color(0xFFB7A078),
+    warning: Color(0xFFC4A06A),
+    danger: Color(0xFFA87858),
+    shadowTop: Color(0x22FFFFFF),
+    shadowBottom: Color(0x99000000),
+    onAccent: Color(0xFFF4F1E6),
+    goldDeep: Color(0xFF1C2418),
+    goldLight: Color(0x55C4B48A),
   );
 
   static _Palette get _p {
@@ -116,10 +116,7 @@ class AppColors {
     }
   }
 
-  static bool get isDark {
-    final id = UserConfig().themeId;
-    return id == AppThemeId.corporate || id == AppThemeId.tactical;
-  }
+  static bool get isDark => UserConfig().themeId != AppThemeId.light;
 
   static Color get bg => _p.bg;
   static Color get card => _p.card;
@@ -148,26 +145,26 @@ class AppColors {
   static List<Color> get scene {
     switch (UserConfig().themeId) {
       case AppThemeId.light:
-        return const [Color(0xFFF8F1E4), Color(0xFFE6D4BA), Color(0xFFD4C0A2)];
+        return const [Color(0xFFF3E6CC), Color(0xFFE4D3B4), Color(0xFFCDB892)];
       case AppThemeId.corporate:
-        return const [Color(0xFF2C3828), Color(0xFF1A2218), Color(0xFF10160F)];
+        return const [Color(0xFF24301C), Color(0xFF141C12), Color(0xFF0C120C)];
       case AppThemeId.tactical:
-        return const [Color(0xFF1A2836), Color(0xFF101820), Color(0xFF080E14)];
+        return const [Color(0xFF161C14), Color(0xFF0C100E), Color(0xFF070A08)];
       default:
-        return const [Color(0xFFF4F7FB), Color(0xFFD7DEE8), Color(0xFFC5CEDA)];
+        return const [Color(0xFF24301C), Color(0xFF141A12), Color(0xFF0C100C)];
     }
   }
 
   static Color get glassTint {
     switch (UserConfig().themeId) {
       case AppThemeId.light:
-        return const Color(0xFFFFF3E4);
+        return const Color(0xFFF6E7CF);
       case AppThemeId.corporate:
-        return const Color(0xFFD5E4C8);
+        return const Color(0xFFC5D4B0);
       case AppThemeId.tactical:
-        return const Color(0xFFC9D7E6);
+        return const Color(0xFFC4B48A);
       default:
-        return const Color(0xFFFFFFFF);
+        return const Color(0xFFD5C49A);
     }
   }
 

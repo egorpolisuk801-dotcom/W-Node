@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'core/camo_button.dart';
 
 class AppUpdater {
   // Головна функція перевірки
@@ -54,29 +55,23 @@ class AppUpdater {
           content: Text(
               "Знайдено нову версію системи W1.2 (v$newVersion).\n\nОновіть програму, щоб отримати нові функції та покращення стабільності."),
           actions: [
-            TextButton(
+            CamoButton(
+              label: 'Пізніше',
+              tone: CamoTone.deep,
+              compact: true,
               onPressed: () => Navigator.pop(context),
-              child:
-                  const Text("Пізніше", style: TextStyle(color: Colors.grey)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color(0xFF10B981), // Твій фірмовий зелений
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
+            CamoButton(
+              label: 'Оновити зараз',
+              tone: CamoTone.olive,
+              compact: true,
               onPressed: () async {
                 final Uri fileUrl = Uri.parse(url);
-                // Відкриваємо браузер для завантаження APK
                 if (await canLaunchUrl(fileUrl)) {
                   await launchUrl(fileUrl,
                       mode: LaunchMode.externalApplication);
                 }
               },
-              child: const Text("Оновити зараз",
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );

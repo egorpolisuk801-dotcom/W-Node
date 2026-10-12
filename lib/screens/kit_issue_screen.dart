@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/user_config.dart';
 import '../core/tactical_ui.dart';
 import '../core/fun_moments.dart';
@@ -123,17 +124,18 @@ class _KitIssueScreenState extends State<KitIssueScreen> {
                                 },
                               ),
                       ),
-                      OutlinedButton.icon(
+                      CamoButton(
+                        label: q.trim().length < 2
+                            ? 'Введи ПІБ, щоб додати'
+                            : 'Додати «${q.trim()}»',
+                        icon: Icons.person_add_alt_1_rounded,
+                        tone: CamoTone.moss,
                         onPressed: q.trim().length < 2
                             ? null
                             : () async {
                                 await DBService().addPerson(fullName: q.trim());
                                 if (ctx.mounted) Navigator.pop(ctx, q.trim());
                               },
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: Text(q.trim().length < 2
-                            ? 'Введи ПІБ, щоб додати'
-                            : 'Додати «${q.trim()}»'),
                       ),
                     ],
                   ),
@@ -332,30 +334,19 @@ class _KitIssueScreenState extends State<KitIssueScreen> {
                                   color: AppColors.danger,
                                   fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: canGo ? _confirm : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              foregroundColor: AppColors.onAccent,
-                              disabledBackgroundColor: AppColors.card,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4)),
-                            ),
-                            child: _saving
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.black))
-                                : Text(
-                                    'Видати комплект  •  $ready позицій',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w900),
-                                  ),
-                          ),
+                        CamoButton(
+                          label: 'Видати комплект  •  $ready позицій',
+                          tone: CamoTone.olive,
+                          onPressed: canGo && !_saving ? _confirm : null,
+                          child: _saving
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFFF4F0E4)),
+                                )
+                              : null,
                         ),
                       ],
                     ),

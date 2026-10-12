@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/tactical_ui.dart';
 import '../data/zsu_norms.dart';
 
@@ -95,16 +96,14 @@ class OfficialNormsScreen extends StatelessWidget {
                   );
                 }),
                 const SizedBox(height: 8),
-                TextButton(
+                CamoButton(
+                  label: 'Відкрити закон на сайті Ради',
+                  tone: CamoTone.khaki,
+                  compact: true,
                   onPressed: () async {
                     final uri = Uri.parse(cat.sourceUrl);
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   },
-                  child: Text(
-                    'Відкрити закон на сайті Ради',
-                    style: TextStyle(
-                        color: AppColors.accent, fontWeight: FontWeight.w700),
-                  ),
                 ),
                 Text(cat.source,
                     textAlign: TextAlign.center,

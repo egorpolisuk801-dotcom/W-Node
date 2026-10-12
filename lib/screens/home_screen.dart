@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:vibration/vibration.dart';
 import '../core/app_colors.dart';
+import '../core/camo_button.dart';
 import '../core/user_config.dart';
 import '../core/shell_controller.dart';
 import '../core/tactical_ui.dart';
@@ -908,15 +909,12 @@ class _HomeScreenState extends State<HomeScreen>
               _controlPanel(item, total, isInventory, typeColor),
               const SizedBox(height: 12),
               Row(children: [
-                TextButton.icon(
+                CamoButton(
+                  label: 'Редагувати',
+                  icon: Icons.edit_rounded,
+                  tone: CamoTone.khaki,
+                  compact: true,
                   onPressed: () => _showEditItem(item),
-                  icon: Icon(Icons.edit_rounded,
-                      size: 16, color: AppColors.accentBlue),
-                  label: Text('Редагувати',
-                      style: TextStyle(
-                          color: AppColors.accentBlue,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13)),
                 ),
                 const Spacer(),
                 Icon(Icons.calendar_today_rounded,
@@ -1116,31 +1114,26 @@ class _HomeScreenState extends State<HomeScreen>
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 10)))),
                 actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text("Скасувати",
-                          style: TextStyle(color: AppColors.muted, fontSize: 14))),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4))),
-                      onPressed: () {
-                        _vibrate(duration: 60);
-                        int val = int.tryParse(qtyCtrl.text) ?? 0;
-                        if (val > 0) {
-                          int delta = isAdd ? val : -val;
-                          _updateQuantity(item, sizeKey, delta);
-                        }
-                        Navigator.pop(ctx);
-                      },
-                      child: Text("ОК",
-                          style: TextStyle(
-                              color: AppColors.onAccent,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold)))
+                  CamoButton(
+                    label: 'Скасувати',
+                    tone: CamoTone.deep,
+                    compact: true,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                  CamoButton(
+                    label: 'ОК',
+                    tone: CamoTone.olive,
+                    compact: true,
+                    onPressed: () {
+                      _vibrate(duration: 60);
+                      int val = int.tryParse(qtyCtrl.text) ?? 0;
+                      if (val > 0) {
+                        int delta = isAdd ? val : -val;
+                        _updateQuantity(item, sizeKey, delta);
+                      }
+                      Navigator.pop(ctx);
+                    },
+                  ),
                 ]));
   }
 
@@ -1166,17 +1159,18 @@ class _HomeScreenState extends State<HomeScreen>
                 content: Text("Цей запис буде переміщено в архів.",
                     style: TextStyle(color: AppColors.muted, fontSize: 15)),
                 actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: Text("Ні",
-                          style: TextStyle(color: AppColors.muted, fontSize: 15))),
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text("Так",
-                          style: TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold)))
+                  CamoButton(
+                    label: 'Ні',
+                    tone: CamoTone.moss,
+                    compact: true,
+                    onPressed: () => Navigator.pop(ctx, false),
+                  ),
+                  CamoButton(
+                    label: 'Так',
+                    tone: CamoTone.brown,
+                    compact: true,
+                    onPressed: () => Navigator.pop(ctx, true),
+                  ),
                 ]));
     if (confirm) {
       _vibrate(duration: 100);
@@ -1320,11 +1314,10 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ]),
                   const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
+                  CamoButton(
+                    label: 'Зберегти',
+                    tone: CamoTone.olive,
+                    onPressed: () async {
                         final name = nameCtrl.text.trim();
                         if (name.isEmpty) return;
                         final price = double.tryParse(
@@ -1341,12 +1334,6 @@ class _HomeScreenState extends State<HomeScreen>
                         if (ctx.mounted) Navigator.pop(ctx);
                         _loadLocalData();
                       },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: AppColors.onAccent),
-                      child: const Text('Зберегти',
-                          style: TextStyle(fontWeight: FontWeight.w900)),
-                    ),
                   ),
                 ],
               ),
