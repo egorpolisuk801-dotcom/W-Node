@@ -1,0 +1,2509 @@
+{
+  "source": "Наказ МОУ № 232 від 29.04.2016 (z0767-16), редакція від 09.05.2025",
+  "sourceUrl": "https://zakon.rada.gov.ua/laws/show/z0767-16#Text",
+  "tables": {
+    "1": {
+      "code": "1",
+      "title": "Бойовий єдиний комплект (БЄК)",
+      "hint": "Усі сили. Кількість одна; строк кат. 1 = мирний, кат. 5 = воєнний стан",
+      "items": [
+        {
+          "n": "1",
+          "name": "Кашкет польовий (кепі бойове)",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "2",
+          "name": "Кепі (тип К)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "3",
+          "name": "Панама літня польова",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "4",
+          "name": "Шапка-феска (шапка-підшоломник)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "5",
+          "name": "Шапка зимова",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "6",
+          "name": "Костюм літній польовий",
+          "unit": "комплект",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "7",
+          "name": "Штани костюма літнього польового",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "8",
+          "name": "Костюм-утеплювач",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "9",
+          "name": "Костюм вітровологозахисний демісезонний або пончо",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "10",
+          "name": "Куртка демісезонна",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "11",
+          "name": "Куртка вітровологозахисна зимова (куртка утеплена польова)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "12",
+          "name": "Штани вітровологозахисні зимові (штани утеплені польові)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "13",
+          "name": "Сорочка-поло",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "14",
+          "name": "Сорочка бойова",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "15",
+          "name": "Рукавички демісезонні",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "16",
+          "name": "Рукавички зимові",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "17",
+          "name": "Шарф-труба літній",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "18",
+          "name": "Шарф-труба зимовий",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "19",
+          "name": "Фуфайка (з короткими рукавами)",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "20",
+          "name": "Труси чоловічі",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "21",
+          "name": "Труси жіночі",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "22",
+          "name": "Топ жіночий",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "23",
+          "name": "Білизна натільна демісезонна",
+          "unit": "комплект",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "24",
+          "name": "Білизна для холодної погоди (сорочка зимова та кальсони зимові)",
+          "unit": "комплект",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "25",
+          "name": "Шкарпетки літні (трекінгові)",
+          "unit": "пара",
+          "qtyPeace": "6",
+          "qtyWar": "6",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "26",
+          "name": "Шкарпетки зимові (трекінгові)",
+          "unit": "пара",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "27",
+          "name": "Напівчеревики",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "28",
+          "name": "Черевики літні",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "29",
+          "name": "Черевики з високими берцями зимові",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "30",
+          "name": "Капці казармені",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "31",
+          "name": "Бахіли утеплені",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "32",
+          "name": "Чоботи гумові",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "33",
+          "name": "Рукавички тактичні",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "34",
+          "name": "Беруші спеціальні індивідуальні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "35",
+          "name": "Ремінь брючний",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "36",
+          "name": "Сумка транспортна індивідуальна",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "37",
+          "name": "Сумка адміністративна",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "38",
+          "name": "Сумка-підсумок для предметів особистої гігієни",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "39",
+          "name": "Мішок спальний",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "40",
+          "name": "Килим спальний польовий ізоляційний",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "41",
+          "name": "Сидіння польове ізоляційне",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "42",
+          "name": "Фляга індивідуальна польова",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "43",
+          "name": "Чохол для фляги індивідуальної польової",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "44",
+          "name": "Казанок індивідуальний польовий",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "45",
+          "name": "Чохол для шолома бойового балістичного",
+          "unit": "штука",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "46",
+          "name": "Чохол для бронежилета модульного або полегшеного",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2.5 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "47",
+          "name": "Окуляри захисні балістичні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "48",
+          "name": "Шолом бойовий балістичний",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "49",
+          "name": "Бронежилет модульний або полегшений",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        }
+      ]
+    },
+    "2": {
+      "code": "2",
+      "title": "Бойовий спеціальний комплект (БСК)",
+      "hint": "Строки окремо для мирного часу і особливого періоду",
+      "items": [
+        {
+          "n": "1",
+          "name": "Маска спеціальна",
+          "unit": "шт",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "2",
+          "name": "Балаклава",
+          "unit": "шт.",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "3",
+          "name": "Костюм спеціальний літній",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "4",
+          "name": "Костюм спеціальний зимовий",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "5",
+          "name": "Костюм маскувальний спеціальний",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "6",
+          "name": "Індивідуальний маскувальний комплект",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "7",
+          "name": "Шарф-сітка маскувальний",
+          "unit": "шт",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "8",
+          "name": "Костюм маскувальний зимовий",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "9",
+          "name": "Костюм вітровологозахисний демісезонний (тип-А)",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "10",
+          "name": "Окуляри-маска захисні балістичні",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "11",
+          "name": "Рукавички захисні",
+          "unit": "пар",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "12",
+          "name": "Сітка протимоскітна",
+          "unit": "шт",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "13",
+          "name": "Полог протимоскітний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "14",
+          "name": "Налокітники тактичні бойові",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "15",
+          "name": "Наколінники тактичні бойові",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "16",
+          "name": "Навушники спеціальні",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "17",
+          "name": "Ремінь розвантажувальний тактичний захисний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "18",
+          "name": "Сумка-укладка медична",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "19",
+          "name": "Сумка-підсумок транспортна бойова",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "20",
+          "name": "Підсумок транспортний бойовий універсальний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "21",
+          "name": "Сумка-підсумок розкладна універсальна",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "22",
+          "name": "Сумка-підсумок адміністративна",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "23",
+          "name": "Рюкзак бойовий індивідуальний",
+          "unit": "шт",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "24",
+          "name": "Рюкзак медичний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "25",
+          "name": "Гідросистема для питної води",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "26",
+          "name": "Чохол до гідросистеми для питної води",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "27",
+          "name": "Карабін з муфтою",
+          "unit": "шт.",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "28",
+          "name": "Тент універсальний польовий",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "29",
+          "name": "Пальник індивідуальний польовий",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "30",
+          "name": "Сумка-підсумок бойова-В",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "31",
+          "name": "Сумка-підсумок бойова-С",
+          "unit": "шт.",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "32",
+          "name": "Сумка-підсумок бойова-Г",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "33",
+          "name": "Сумка-підсумок бойова-А",
+          "unit": "шт.",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "34",
+          "name": "Сумка-підсумок бойова-К",
+          "unit": "шт.",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "35",
+          "name": "Кобура пістолетна універсальна",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "36",
+          "name": "Сумка-підсумок бойова-П",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "37",
+          "name": "Сумка-підсумок бойова-Р",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "38",
+          "name": "Чохол для мапи",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "39",
+          "name": "Ніж індивідуальний табірний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "7 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "40",
+          "name": "Ліхтарик польовий індивідуальний",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "41",
+          "name": "Засіб індивідуального обігріву",
+          "unit": "к-т",
+          "qtyPeace": "—",
+          "qtyWar": "—",
+          "termPeace": "—",
+          "termWar": "—"
+        },
+        {
+          "n": "42",
+          "name": "Душ польовий",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "43",
+          "name": "Бронежилет спеціальний з позитивною плавучістю (Тип К)",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "44",
+          "name": "Чохол до бронежилета спеціального з позитивною плавучістю (Тип К)",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "45",
+          "name": "Елемент підтримки плавучості до бронежилета спеціального з позитивною плавучістю (Тип К)",
+          "unit": "к-т",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "1 р."
+        }
+      ]
+    },
+    "4": {
+      "code": "4",
+      "title": "Повсякденна форма",
+      "hint": "Строк: 1 група забезпечення / 2 група забезпечення",
+      "items": [
+        {
+          "n": "1",
+          "name": "Кашкет",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "2",
+          "name": "Берет",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "3",
+          "name": "Пілотка",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "4",
+          "name": "Шапка зимова повсякденна",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "5",
+          "name": "Пальто зимове",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "6",
+          "name": "Плащ демісезонний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "7",
+          "name": "Куртка зимова",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "8",
+          "name": "Плащ-накидка з чохлом",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "9",
+          "name": "Ремінь до штанів",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "10",
+          "name": "Кітель і штани (спідниця)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "10.1",
+          "name": "Тужурка і штани (спідниця)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "10.2",
+          "name": "Кітель однобортний і штани (спідниця) білого кольору",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "11",
+          "name": "Куртка і штани (спідниця)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "—",
+          "termWar": "2 р."
+        },
+        {
+          "n": "12",
+          "name": "Штани (спідниця)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "—",
+          "termWar": "2 р."
+        },
+        {
+          "n": "13",
+          "name": "Джемпер",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "—",
+          "termWar": "5 р."
+        },
+        {
+          "n": "13.1",
+          "name": "Пуловер",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "14",
+          "name": "Сорочка",
+          "unit": "",
+          "qtyPeace": "5",
+          "qtyWar": "5",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "15",
+          "name": "Краватка (краватка-стрічка (жіноча))",
+          "unit": "",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "16",
+          "name": "Кашне",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "17",
+          "name": "Рукавички трикотажні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "17.1",
+          "name": "Рукавички шкіряні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "18",
+          "name": "Костюм спортивний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "Взуття"
+        },
+        {
+          "n": "19",
+          "name": "Напівчоботи хромові утеплені (чобітки хромові утеплені)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "20",
+          "name": "Напівчеревики хромові (туфлі хромові)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "20.1",
+          "name": "Напівчеревики хромові білого кольору",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "21",
+          "name": "Кросівки",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "Білизна"
+        },
+        {
+          "n": "22",
+          "name": "Шкарпетки літні",
+          "unit": "",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "23",
+          "name": "Шкарпетки зимові",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "24",
+          "name": "Труси спортивні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "25 р."
+        }
+      ]
+    },
+    "8": {
+      "code": "8",
+      "title": "Корабельний склад ВМС",
+      "hint": "Контракт / строкова служба",
+      "items": [
+        {
+          "n": "1",
+          "name": "Кашкет-безкозирка з двома чохлами (кашкет жіночий)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "2",
+          "name": "Стрічка до кашкета-безкозирки",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "3",
+          "name": "Шапка зимова повсякденна",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "4",
+          "name": "Бушлат",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "5",
+          "name": "Куртка зимова",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "—"
+        },
+        {
+          "n": "6",
+          "name": "Плащ демісезонний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "—"
+        },
+        {
+          "n": "7",
+          "name": "Краватка матроська",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "8",
+          "name": "Фланелівка зимова",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "9",
+          "name": "Форменка літня",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "10",
+          "name": "Комір формений",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "11",
+          "name": "Штани (спідниця)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "12",
+          "name": "Штани (спідниця) білого кольору",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "—"
+        },
+        {
+          "n": "13",
+          "name": "Рукавички трикотажні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "14",
+          "name": "Костюм (куртка і штани) спеціальний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "15",
+          "name": "Напівчоботи хромові утеплені (чобітки хромові утеплені)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "16",
+          "name": "Напівчеревики хромові (туфлі хромові)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "17",
+          "name": "Напівчеревики хромові (туфлі хромові) білого кольору",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "—"
+        },
+        {
+          "n": "18",
+          "name": "Шкарпетки літні",
+          "unit": "",
+          "qtyPeace": "3",
+          "qtyWar": "3",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "19",
+          "name": "Шкарпетки зимові",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "20",
+          "name": "Фуфайка (з короткими рукавами) білого кольору",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "21",
+          "name": "Пояс парадний з пряжкою",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "до зносу"
+        },
+        {
+          "n": "22",
+          "name": "Ремінь до штанів",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "до зносу"
+        }
+      ]
+    },
+    "12": {
+      "code": "12",
+      "title": "Спецодяг Повітряних Сил",
+      "hint": "Радіотехнічні частини поза приміщенням",
+      "items": [
+        {
+          "n": "1",
+          "name": "Костюм (куртка і штани) спеціальний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "2",
+          "name": "Костюм (куртка і штани) утеплений",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "3",
+          "name": "Рукавиці хутряні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "4",
+          "name": "Кожух звичайний (пальто хутряне)",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "5",
+          "name": "Бахіли утеплені",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "6",
+          "name": "Чоботи гумові",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        }
+      ]
+    },
+    "13": {
+      "code": "13",
+      "title": "Льотний одяг",
+      "hint": "Строк: помірний клімат / жаркий клімат",
+      "items": [
+        {
+          "n": "1",
+          "name": "Куртка на хутрі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "8 р."
+        },
+        {
+          "n": "2",
+          "name": "Куртка демісезонна",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "3",
+          "name": "Штани демісезонні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "4",
+          "name": "Куртка шкіряна",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "5",
+          "name": "Штани шкіряні на байці",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "10 р.",
+          "termWar": "10 р."
+        },
+        {
+          "n": "6",
+          "name": "Светр вовняний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "7 р.",
+          "termWar": "8 р."
+        },
+        {
+          "n": "7",
+          "name": "Білизна натільна вовняна",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "8",
+          "name": "Костюм (куртка і штани) спеціальний або комбінезон",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "9",
+          "name": "Черевики польотні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "10",
+          "name": "Черевики польотні полегшені",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "11",
+          "name": "Сандалети шкіряні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "12",
+          "name": "Шоломофон шкіряний зимовий",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "8 р.",
+          "termWar": "9 р."
+        },
+        {
+          "n": "13",
+          "name": "Шоломофон шкіряний літній або полегшений із сіткою",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "14",
+          "name": "Підшоломник бавовняний",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "15",
+          "name": "Білизна натільна шовкова",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "16",
+          "name": "Рукавички шкіряні на хутрі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "17",
+          "name": "Рукавички шкіряні без підкладки",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "18",
+          "name": "Шкарпетки вовняні плюшевого переплетення",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "19",
+          "name": "Шкарпетки зимові",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        }
+      ]
+    },
+    "18": {
+      "code": "18",
+      "title": "Десантний і льотний одяг ДШВ",
+      "hint": "Інвентарне майно",
+      "items": [
+        {
+          "n": "1",
+          "name": "Комбінезон літній для стрибків з парашутом",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "2",
+          "name": "Комбінезон зимовий для стрибків з парашутом",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "3",
+          "name": "Розвантажувальна система",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "4",
+          "name": "Шолом балістичний десантний з чохлом для стрибків з парашутом",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "5",
+          "name": "Чохол для шолома балістичного десантного",
+          "unit": "",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "6",
+          "name": "Шолом тренувальний для стрибків з парашутом",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "10 р.",
+          "termWar": "10 р."
+        },
+        {
+          "n": "7",
+          "name": "Рюкзак десантний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "8",
+          "name": "Черевики з високими берцями",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "9",
+          "name": "Шолом шкіряний зимовий",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "10",
+          "name": "Куртка на хутрі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "11",
+          "name": "Штани на хутрі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "10 р.",
+          "termWar": "10 р."
+        },
+        {
+          "n": "12",
+          "name": "Светр вовняний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "8 р.",
+          "termWar": "8 р."
+        },
+        {
+          "n": "13",
+          "name": "Черевики польотні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "14",
+          "name": "Рукавички шкіряні на хутрі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "15",
+          "name": "Шкарпетки хутряні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "16",
+          "name": "Шкарпетки зимові плюшевого переплетення",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        }
+      ]
+    },
+    "19": {
+      "code": "19",
+      "title": "Спецодяг ССО",
+      "hint": "Тип С. Інвентарне майно",
+      "items": [
+        {
+          "n": "1",
+          "name": "Кепі бойове (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "2",
+          "name": "Панама літня польова (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "3",
+          "name": "Шапка-підшоломник літня польова",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "4",
+          "name": "Шапка-феска (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "10 р.",
+          "termWar": "10 р."
+        },
+        {
+          "n": "5",
+          "name": "Шапка зимова (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "6",
+          "name": "Шарф-труба літній (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "7",
+          "name": "Шарф-труба зимовий (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "8",
+          "name": "Шарф-сітка маскувальний",
+          "unit": "штука",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "9",
+          "name": "Балаклава",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "10",
+          "name": "Фуфайка (з короткими рукавами) (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "11",
+          "name": "Труси (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "12",
+          "name": "Білизна натільна демісезонна (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "13",
+          "name": "Білизна для холодної погоди (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "14",
+          "name": "Костюм літній польовий (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "1 р.",
+          "termWar": "1 р."
+        },
+        {
+          "n": "15",
+          "name": "Костюм спеціальний літній (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "15.1",
+          "name": "Штани до костюма спеціального літнього (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "16",
+          "name": "Костюм маскувальний зимовий (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "17",
+          "name": "Костюм демісезонний спеціальний (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "18",
+          "name": "Костюм вітровологозахисний польовий (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "19",
+          "name": "Костюм-утеплювач (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "20",
+          "name": "Костюм (куртка та штани) зимовий (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "21",
+          "name": "Сорочка бойова (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "22",
+          "name": "Костюм маскувальний (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "23",
+          "name": "Рукавички тактичні (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "24",
+          "name": "Рукавички демісезонні",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "25",
+          "name": "Рукавички зимові (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "26",
+          "name": "Черевики з високими берцями демісезонні (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "27",
+          "name": "Черевики з високими берцями літні (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "28",
+          "name": "Черевики з високими берцями зимові (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "29",
+          "name": "Бахіли (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "30",
+          "name": "Рукавички для десантування",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "31",
+          "name": "Рукавички захисні (тип С)",
+          "unit": "пара",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "32",
+          "name": "Сітка протимоскітна",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "33",
+          "name": "Полог (завіса) протимоскітна",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "3 р.",
+          "termWar": "3 р."
+        },
+        {
+          "n": "34",
+          "name": "Налокітники тактичні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "35",
+          "name": "Наколінники тактичні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "36",
+          "name": "Рюкзак рейдовий (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "37",
+          "name": "Рюкзак бойовий індивідуальний (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "38",
+          "name": "Карабін з муфтою",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "39",
+          "name": "Тент універсальний польовий",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "40",
+          "name": "Гідросистема для питної води",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "41",
+          "name": "Чохол до гідросистеми для питної води",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "42",
+          "name": "Пальник індивідуальний польовий",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "43",
+          "name": "Сумка транспортна індивідуальна (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "44",
+          "name": "Підсумок транспортний бойовий універсальний (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "45",
+          "name": "Кобура пістолетна універсальна (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "46",
+          "name": "Ремінь розвантажувальний тактичний захисний (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "47",
+          "name": "Сумка-укладка медична (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "48",
+          "name": "Сумка-підсумок розкладна універсальна (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "49",
+          "name": "Сумка-підсумок транспортна бойова (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "50",
+          "name": "Сумка-підсумок для предметів особистої гігієни (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "51",
+          "name": "Сумка-підсумок адміністративна (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "52",
+          "name": "Сумка-підсумок бойова-А (тип С)",
+          "unit": "штука",
+          "qtyPeace": "8",
+          "qtyWar": "8",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "53",
+          "name": "Сумка-підсумок бойова-В (тип С)",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "54",
+          "name": "Сумка-підсумок бойова-Г (тип С)",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "55",
+          "name": "Сумка-підсумок бойова-К (тип С)",
+          "unit": "штука",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "56",
+          "name": "Сумка-підсумок бойова-П (тип С)",
+          "unit": "штука",
+          "qtyPeace": "2",
+          "qtyWar": "2",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "57",
+          "name": "Сумка-підсумок бойова-Р (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "58",
+          "name": "Сумка-підсумок бойова-С (тип С)",
+          "unit": "штука",
+          "qtyPeace": "4",
+          "qtyWar": "4",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "59",
+          "name": "Ремінь брючний (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "6 р.",
+          "termWar": "6 р."
+        },
+        {
+          "n": "60",
+          "name": "Ніж індивідуальний табірний (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "7 р.",
+          "termWar": "7 р."
+        },
+        {
+          "n": "61",
+          "name": "Кухоль індивідуальний складаний",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "7 р.",
+          "termWar": "7 р."
+        },
+        {
+          "n": "62",
+          "name": "Модульна всесезонна спальна система (мішок спальний) (тип С)",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "63",
+          "name": "Сидіння польове ізоляційне (тип С)",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "64",
+          "name": "Пончо",
+          "unit": "штука",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "65",
+          "name": "Індивідуальний маскувальний комплект",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "66",
+          "name": "Окуляри-маска захисні балістичні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "67",
+          "name": "Окуляри захисні балістичні",
+          "unit": "комплект",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "68",
+          "name": "Бронежилет полегшений",
+          "unit": "шт.",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        }
+      ]
+    },
+    "21": {
+      "code": "21",
+      "title": "Надводні кораблі ВМС",
+      "hint": "Спецодяг у морі",
+      "items": [
+        {
+          "n": "1",
+          "name": "Шолом захисний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "2",
+          "name": "Маска спеціальна",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "3",
+          "name": "Костюм шкіперський",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "4 р.",
+          "termWar": "4 р."
+        },
+        {
+          "n": "4",
+          "name": "Костюм вогнестійкий",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "5",
+          "name": "Костюм (куртка і штани) спеціальний",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "6",
+          "name": "Комбінезон маслобензиностійкий",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "7",
+          "name": "Рукавички водостійкі з утеплювачем",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "8",
+          "name": "Рукавиці вогнестійкі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        },
+        {
+          "n": "9",
+          "name": "Рукавиці спеціальні",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "2 р.",
+          "termWar": "2 р."
+        },
+        {
+          "n": "10",
+          "name": "Чоботи вогнестійкі",
+          "unit": "",
+          "qtyPeace": "1",
+          "qtyWar": "1",
+          "termPeace": "5 р.",
+          "termWar": "5 р."
+        }
+      ]
+    }
+  },
+  "forces": [
+    {
+      "id": "sv",
+      "name": "Сухопутні війська",
+      "short": "СВ",
+      "hint": "БЄК, БСК і повсякденна форма",
+      "tableIds": [
+        "1",
+        "2",
+        "4"
+      ]
+    },
+    {
+      "id": "vms",
+      "name": "Військово-Морські Сили",
+      "short": "ВМС",
+      "hint": "БЄК, корабельний склад, надводні кораблі",
+      "tableIds": [
+        "1",
+        "8",
+        "21"
+      ]
+    },
+    {
+      "id": "ps",
+      "name": "Повітряні Сили",
+      "short": "ПС",
+      "hint": "БЄК, спецодяг ПС, льотний одяг",
+      "tableIds": [
+        "1",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "id": "dshv",
+      "name": "Десантно-штурмові війська",
+      "short": "ДШВ",
+      "hint": "БЄК і десантний одяг",
+      "tableIds": [
+        "1",
+        "18"
+      ]
+    },
+    {
+      "id": "sso",
+      "name": "Сили спеціальних операцій",
+      "short": "ССО",
+      "hint": "БЄК і спецодяг тип С",
+      "tableIds": [
+        "1",
+        "19"
+      ]
+    }
+  ]
+}

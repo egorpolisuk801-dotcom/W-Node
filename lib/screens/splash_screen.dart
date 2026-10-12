@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-// 🔥 ПІДКЛЮЧЕНО СПРАВЖНІЙ ГОЛОВНИЙ ЕКРАН 🔥
-import 'home_screen.dart';
+import '../core/app_colors.dart';
+import '../core/tactical_ui.dart';
+import '../core/fun_moments.dart';
+import 'main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,200 +12,107 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  String _loadingText = "ІНІЦІАЛІЗАЦІЯ W-NODE CORE...";
-  double _progressValue = 0.0;
-
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+    with TickerProviderStateMixin {
+  late final AnimationController _in;
+  late final AnimationController _ring;
 
   @override
   void initState() {
     super.initState();
-
-    // Налаштування анімації пульсації логотипу
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
-
-    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    // Запуск хакерської послідовності завантаження
-    _startBootSequence();
+    _in = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900))
+      ..forward();
+    _ring = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2200))
+      ..repeat();
+    _go();
   }
 
-  void _startBootSequence() async {
-    // Етап 1: Початок
-    await Future.delayed(const Duration(milliseconds: 800));
+  Future<void> _go() async {
+    await Future.delayed(const Duration(milliseconds: 1600));
     if (!mounted) return;
-    setState(() {
-      _loadingText = "ПІДКЛЮЧЕННЯ ДО SUPABASE CLOUD...";
-      _progressValue = 0.35;
-    });
-
-    // Етап 2: Синхронізація
-    await Future.delayed(const Duration(milliseconds: 1000));
-    if (!mounted) return;
-    setState(() {
-      _loadingText = "СИНХРОНІЗАЦІЯ ДАНИХ СКЛАДІВ...";
-      _progressValue = 0.75;
-    });
-
-    // Етап 3: Фіналізація
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() {
-      _loadingText = "СИСТЕМА АКТИВОВАНА. ВХІД...";
-      _progressValue = 1.0;
-    });
-
-    // Коротка пауза для ефекту "успіху"
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-
-    // 🔥 ПЕРЕХІД НА ГОЛОВНИЙ ЕКРАН (ТЕПЕР НА HOMESCREEN) 🔥
-    // pushReplacement видаляє Splash з пам'яті, щоб не можна було повернутися назад
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(), // <--- ВАЖЛИВА ЗМІНА ТУТ
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Плавне розчинення (Fade) при переході
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 1000),
+        pageBuilder: (_, __, ___) => const MainShell(),
+        transitionsBuilder: (_, a, __, child) => FadeTransition(
+          opacity: a,
+          child: child,
+        ),
+        transitionDuration: const Duration(milliseconds: 420),
       ),
     );
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _in.dispose();
+    _ring.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1120), // Глибокий тактичний фон
-      body: Stack(
-        children: [
-          // Радіальний градієнт для ефекту глибини
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.2,
-                  colors: [
-                    const Color(0xFF00E676).withOpacity(0.08),
-                    const Color(0xFF0B1120),
-                  ],
-                ),
+      backgroundColor: AppColors.bg,
+      body: TacBackdrop(
+        child: FadeTransition(
+          opacity: CurvedAnimation(parent: _in, curve: Curves.easeOut),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 36, 28, 36),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  AnimatedBuilder(
+                    animation: _ring,
+                    builder: (_, child) {
+                      return Container(
+                        width: 132,
+                        height: 132,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.accent
+                                .withOpacity(0.25 + 0.45 * (1 - _ring.value)),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Transform.scale(
+                          scale: 1 + 0.04 * (0.5 - (_ring.value - 0.5).abs()),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 104,
+                      height: 104,
+                      alignment: Alignment.center,
+                      child: VolGlass(
+                        radius: 32,
+                        padding: const EdgeInsets.all(22),
+                        glow: AppColors.accent,
+                        child: Icon(Icons.inventory_2_rounded,
+                            color: AppColors.textMain, size: 40),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Text('W-NODE', style: TacStyle.stencil.copyWith(fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Text('Склад',
+                      style: TacStyle.title.copyWith(fontSize: 40)),
+                  const SizedBox(height: 8),
+                  Text('Облік складу',
+                      style: TacStyle.muted.copyWith(fontSize: 15)),
+                  const Spacer(),
+                  Text(FunCopy.splashHint(),
+                      style: TacStyle.muted.copyWith(fontSize: 14)),
+                ],
               ),
             ),
           ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-
-                // Пульсуючий неоновий логотип
-                ScaleTransition(
-                  scale: _pulseAnimation,
-                  child: Container(
-                    padding: const EdgeInsets.all(25),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: const Color(0xFF00E676), width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E676).withOpacity(0.4),
-                          blurRadius: 30,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.memory_rounded,
-                      size: 80,
-                      color: Color(0xFF00E676),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Назва системи
-                const Text(
-                  "W-LOGISTICS",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 6.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "SECURE COMMAND CENTER",
-                  style: TextStyle(
-                    color: Color(0xFF00B0FF), // Неоновий синій підзаголовок
-                    fontSize: 14,
-                    letterSpacing: 3.0,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Нижня панель завантаження (Термінал)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 45.0, vertical: 60.0),
-                  child: Column(
-                    children: [
-                      // Тонка смуга прогресу
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: _progressValue,
-                          backgroundColor: const Color(0xFF1E293B),
-                          color: const Color(0xFF00E676),
-                          minHeight: 4,
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      // Рядок стану термінала
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.terminal_rounded,
-                              color: Color(0xFF00E676), size: 18),
-                          const SizedBox(width: 12),
-                          Text(
-                            _loadingText,
-                            style: const TextStyle(
-                              color: Color(0xFF00E676),
-                              fontFamily: 'Courier', // Моноширинний шрифт
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/db_service.dart';
 import '../core/app_colors.dart';
+import '../core/log_utils.dart';
+import '../core/tactical_ui.dart';
+import '../core/fun_moments.dart';
+import '../core/shell_controller.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -12,11 +16,25 @@ class LogsScreen extends StatefulWidget {
 class _LogsScreenState extends State<LogsScreen> {
   List<Map<String, dynamic>> _logs = [];
   bool _isLoading = true;
+  bool _todayOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadLogs();
+    ShellController.tab.addListener(_onTab);
+  }
+
+  void _onTab() {
+    if (ShellController.tab.value == 2 && mounted) {
+      _loadLogs();
+    }
+  }
+
+  @override
+  void dispose() {
+    ShellController.tab.removeListener(_onTab);
+    super.dispose();
   }
 
   Future<void> _loadLogs() async {
@@ -39,72 +57,117 @@ class _LogsScreenState extends State<LogsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: Text("ІСТОРІЯ ОПЕРАЦІЙ",
-            style: TextStyle(
-                color: AppColors.textMain,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5)),
-        backgroundColor: AppColors.bg,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: AppColors.textMain),
+      appBar: TacAppBar(
+        title: 'Журнал',
+        code: 'Журнал',
+        implyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_sweep,
-                color: Colors.redAccent, size: 28),
+            icon: Icon(Icons.delete_sweep, color: AppColors.danger, size: 26),
             onPressed: () => _showClearDialog(),
             tooltip: "Очистити історію",
           )
         ],
       ),
-      body: _isLoading
+      body: TacBackdrop(
+        child: _isLoading
           ? Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : _logs.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadLogs,
-                  color: AppColors.accent,
-                  backgroundColor: AppColors.bg,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 15),
-                    itemCount: _logs.length,
-                    itemBuilder: (ctx, i) => _buildLogCard(_logs[i]),
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Row(
+                    children: [
+                      _filterChip('Сьогодні', today: true),
+                      const SizedBox(width: 8),
+                      _filterChip('Вся історія', today: false),
+                    ],
                   ),
                 ),
+                Expanded(
+                  child: _visibleLogs.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: _loadLogs,
+                          color: AppColors.accent,
+                          backgroundColor: AppColors.bg,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            itemCount: _visibleLogs.length,
+                            itemBuilder: (ctx, i) =>
+                                _buildLogCard(_visibleLogs[i]),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> get _visibleLogs {
+    if (!_todayOnly) return _logs;
+    return _logs
+        .where((l) => LogUtils.isWithinHours(l['timestamp'], 24))
+        .toList();
+  }
+
+  Widget _filterChip(String label, {required bool today}) {
+    final on = _todayOnly == today;
+    return GestureDetector(
+      onTap: () => setState(() => _todayOnly = today),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: on ? AppColors.accent.withOpacity(0.15) : AppColors.card,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: on ? AppColors.accent : AppColors.border),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: on ? AppColors.accent : AppColors.muted,
+                fontWeight: FontWeight.w800,
+                fontSize: 13)),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history_toggle_off,
-              size: 80, color: Colors.grey.withOpacity(0.2)),
-          const SizedBox(height: 15),
-          const Text("Журнал операцій порожній",
-              style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.menu_book_outlined,
+                size: 56, color: AppColors.accent.withOpacity(0.45)),
+            const SizedBox(height: 14),
+            Text(
+                _todayOnly ? 'Тихий день' : 'Порожній журнал',
+                style: TextStyle(
+                    color: AppColors.textMain,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(
+                _todayOnly
+                    ? FunCopy.emptyLogsToday()
+                    : FunCopy.emptyLogsAll(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: AppColors.muted, fontSize: 14, height: 1.4)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLogCard(Map<String, dynamic> log) {
     String device = log['device'] ?? "Unknown";
-    String details = log['details'] ?? "Без опису";
-    String timestamp = log['timestamp'] ?? "";
-
-    // Перевіряємо статус синхронізації
+    String details = (log['details'] ?? "").toString();
+    String timestamp = LogUtils.timeLabel(log['timestamp']);
     bool isUnsynced = log['is_unsynced'] == 1 || log['is_unsynced'] == true;
-
-    if (timestamp.length > 16) {
-      timestamp = timestamp.substring(0, 16);
-    }
 
     String fullItemName =
         log['item_name'] ?? "Товар (ID: ${log['item_id'] ?? '?'})";
@@ -130,42 +193,25 @@ class _LogsScreenState extends State<LogsScreen> {
     Color color = Colors.blue;
     IconData actionIcon = Icons.info_outline;
 
-    if (type.contains("додано") || type.contains("створено")) {
+    if (type.contains("переміщ")) {
+      color = const Color(0xFF38BDF8);
+      actionIcon = Icons.swap_horiz_rounded;
+    } else if (type.contains("додано") || type.contains("створено")) {
       color = const Color(0xFF00E676);
       actionIcon = Icons.add_circle;
     } else if (type.contains("видал") || type.contains("вилучено")) {
       color = const Color(0xFFFF3D00);
       actionIcon = Icons.remove_circle;
     } else if (type.contains("зміна") || type.contains("редаг")) {
-      color = Colors.orangeAccent;
+      color = AppColors.sun;
       actionIcon = Icons.edit_note;
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadowTop,
-              offset: const Offset(-2, -2),
-              blurRadius: 4),
-          BoxShadow(
-              color: AppColors.shadowBottom,
-              offset: const Offset(2, 2),
-              blurRadius: 4),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: color, width: 6)),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: TacCard(
+        accent: color,
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -211,7 +257,7 @@ class _LogsScreenState extends State<LogsScreen> {
               ),
               const SizedBox(height: 12),
 
-              _buildSmartDetails(details, color),
+              ChangeBadge(details: details, color: color),
 
               const SizedBox(height: 12),
               Divider(color: Colors.grey.withOpacity(0.2), height: 1),
@@ -233,12 +279,12 @@ class _LogsScreenState extends State<LogsScreen> {
                   if (isUnsynced)
                     Row(
                       children: [
-                        const Icon(Icons.cloud_upload_outlined,
-                            size: 14, color: Colors.orangeAccent),
+                        Icon(Icons.cloud_upload_outlined,
+                            size: 14, color: AppColors.sun),
                         const SizedBox(width: 4),
-                        const Text("Очікує",
+                        Text("Очікує",
                             style: TextStyle(
-                                color: Colors.orangeAccent,
+                                color: AppColors.sun,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold)),
                       ],
@@ -284,7 +330,6 @@ class _LogsScreenState extends State<LogsScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -315,8 +360,8 @@ class _LogsScreenState extends State<LogsScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.bold)),
                   Text(was,
-                      style: const TextStyle(
-                          color: Colors.white70,
+                      style: TextStyle(
+                          color: AppColors.textMain,
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                 ],
@@ -343,8 +388,8 @@ class _LogsScreenState extends State<LogsScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.bold)),
                   Text(became,
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: AppColors.textMain,
                           fontSize: 18,
                           fontWeight: FontWeight.w900)),
                 ],
@@ -364,17 +409,14 @@ class _LogsScreenState extends State<LogsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-                color: Colors.redAccent.withOpacity(0.5), width: 1.5)),
+        shape: TacSheet.dialog(AppColors.danger),
         title: Row(
-          children: const [
-            Icon(Icons.warning_rounded, color: Colors.redAccent),
-            SizedBox(width: 10),
+          children: [
+            const Icon(Icons.warning_rounded, color: Colors.redAccent),
+            const SizedBox(width: 10),
             Text("Очищення",
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: AppColors.textMain, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text(

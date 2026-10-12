@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_colors.dart';
 import '../core/user_config.dart';
+import '../core/theme_controller.dart';
+import '../core/tactical_ui.dart';
 import '../services/db_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Стан
   bool _isDark = true;
+  String _themeId = AppThemeId.hud;
   bool _isLoading = false;
   bool _showPassword = false;
 
@@ -82,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setState(() {
       _isDark = cfg.isDarkMode;
+      _themeId = cfg.themeId;
       _iDig = cfg.itemShowDigits;
       _iLet = cfg.itemShowLetters;
       _iShoe = cfg.itemShowShoes;
@@ -131,7 +135,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dbname: _dbNameCtrl.text.trim(),
       w1: jsonEncode(_warehouses),
       w2: "",
-      darkMode: _isDark,
+      darkMode: _themeId == AppThemeId.corporate ||
+          _themeId == AppThemeId.tactical,
       iDig: _iDig,
       iLet: _iLet,
       iShoe: _iShoe,
@@ -147,6 +152,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       invRng: _invRng,
     );
 
+    await UserConfig().setThemeId(_themeId);
+    ThemeController.set(_themeId);
     await _updateCloudWarehouses(_warehouses);
     await DBService().initConnection();
 
@@ -155,13 +162,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Налаштування збережено!",
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text("Налаштування збережено!",
+              style: TextStyle(
+                  color: AppColors.onAccent, fontWeight: FontWeight.bold)),
           backgroundColor: AppColors.accent,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: TacSheet.dialog(),
         ),
       );
       Navigator.pop(context);
@@ -207,8 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             content: const Text("Ви вийшли з сервера"),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20))),
+            shape: TacSheet.dialog(AppColors.danger)),
       );
       Navigator.pop(context);
     }
@@ -282,7 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             }
                           },
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
+                              borderRadius: BorderRadius.circular(4)),
                           side: BorderSide(color: Colors.grey.withOpacity(0.2)),
                         ))
                     .toList(),
@@ -310,7 +315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                           color: AppColors.accentBlue,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
                                 color: AppColors.shadowBottom,
@@ -322,7 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 blurRadius: 4),
                           ]),
                       child:
-                          const Icon(Icons.add, color: Colors.white, size: 28),
+                          Icon(Icons.add, color: AppColors.onAccent, size: 28),
                     ),
                   )
                 ],
@@ -411,127 +416,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: Text("НАЛАШТУВАННЯ",
-            style: TextStyle(
-                color: AppColors.textMain,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5)),
-        backgroundColor: AppColors.bg,
-        iconTheme: IconThemeData(color: AppColors.textMain),
-        elevation: 0,
-        centerTitle: true,
+      appBar: const TacAppBar(
+        title: 'Налаштування',
+        code: 'Налаштування',
       ),
-      body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _menuTile(
-              title: "Сервер (Supabase)",
-              subtitle: _hostCtrl.text.isNotEmpty
-                  ? "Підключено: ${_dbNameCtrl.text}"
-                  : "Не налаштовано",
-              icon: Icons.dns_rounded,
-              color: Colors.blueAccent,
-              onTap: _showServerSheet,
-            ),
-            _menuTile(
-              title: "Склади",
-              subtitle: "${_warehouses.length} складів активно",
-              icon: Icons.domain_rounded,
-              color: Colors.orangeAccent,
-              onTap: _showWarehousesSheet,
-            ),
-            _menuTile(
-              title: "Відображення: Речі",
-              subtitle: "Налаштування розмірних сіток",
-              icon: Icons.checkroom_rounded,
-              color: Colors.teal,
-              onTap: _showItemCategoriesSheet,
-            ),
-            _menuTile(
-              title: "Відображення: Інвентар",
-              subtitle: "Налаштування категорій інвентарю",
-              icon: Icons.handyman_rounded,
-              color: Colors.purpleAccent,
-              onTap: _showInvCategoriesSheet,
-            ),
-
-            const SizedBox(height: 10),
-            _switchTile("Темна тема інтерфейсу", _isDark,
-                (v) => setState(() => _isDark = v)),
-
-            const SizedBox(height: 50),
-
-            // --- 💾 КНОПКА ЗБЕРЕЖЕННЯ ---
-            GestureDetector(
-              onTap: _isLoading ? null : _save,
-              child: Container(
-                height: 65,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                        color: AppColors.accent.withOpacity(0.4),
-                        offset: const Offset(0, 8),
-                        blurRadius: 15)
-                  ],
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("ЗБЕРЕГТИ ВСІ ЗМІНИ",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2)),
+      body: TacBackdrop(
+        child: SingleChildScrollView(
+          padding:
+              const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _menuTile(
+                title: "Сервер (Supabase)",
+                subtitle: _hostCtrl.text.isNotEmpty
+                    ? "Підключено: ${_dbNameCtrl.text}"
+                    : "Не налаштовано",
+                icon: Icons.dns_rounded,
+                color: AppColors.accentBlue,
+                onTap: _showServerSheet,
               ),
-            ),
-
-            const SizedBox(height: 30),
-            Divider(color: Colors.grey.withOpacity(0.15), thickness: 2),
-            const SizedBox(height: 30),
-
-            // --- 🚪 КНОПКА ВИХОДУ ---
-            GestureDetector(
-              onTap: _isLoading ? null : _exitServer,
-              child: Container(
-                height: 60,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    color: AppColors.bg,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                        color: Colors.redAccent.withOpacity(0.5), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                          color: AppColors.shadowTop,
-                          offset: const Offset(-3, -3),
-                          blurRadius: 6),
-                      BoxShadow(
-                          color: AppColors.shadowBottom,
-                          offset: const Offset(3, 3),
-                          blurRadius: 6),
-                    ]),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.logout, color: Colors.redAccent),
-                    SizedBox(width: 10),
-                    Text("Видалити дані сервера",
-                        style: TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
+              _menuTile(
+                title: "Склади",
+                subtitle: "${_warehouses.length} складів активно",
+                icon: Icons.domain_rounded,
+                color: AppColors.warning,
+                onTap: _showWarehousesSheet,
               ),
-            ),
-          ],
+              _menuTile(
+                title: "Відображення: Речі",
+                subtitle: "Налаштування розмірних сіток",
+                icon: Icons.checkroom_rounded,
+                color: AppColors.accent,
+                onTap: _showItemCategoriesSheet,
+              ),
+              _menuTile(
+                title: "Відображення: Інвентар",
+                subtitle: "Налаштування категорій інвентарю",
+                icon: Icons.handyman_rounded,
+                color: AppColors.silk,
+                onTap: _showInvCategoriesSheet,
+              ),
+              const TacSection(code: 'Тема', hint: 'вигляд програми'),
+              const SizedBox(height: 12),
+              _themePicker(),
+              const SizedBox(height: 28),
+              TacButton(
+                label: 'Зберегти всі зміни',
+                icon: Icons.save_outlined,
+                onTap: _isLoading ? () {} : _save,
+              ),
+              const SizedBox(height: 14),
+              TacButton(
+                label: 'Видалити дані сервера',
+                icon: Icons.logout,
+                color: AppColors.danger,
+                filled: false,
+                onTap: _isLoading ? () {} : _exitServer,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -547,56 +491,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       required IconData icon,
       required Color color,
       required VoidCallback onTap}) {
-    return GestureDetector(
+    return TacCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      accent: color,
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-                color: AppColors.shadowTop,
-                offset: const Offset(-4, -4),
-                blurRadius: 8),
-            BoxShadow(
-                color: AppColors.shadowBottom,
-                offset: const Offset(4, 4),
-                blurRadius: 8),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                  color: color.withOpacity(0.15), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 26),
+      child: Row(
+        children: [
+          TacIconBox(icon: icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ],
             ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: TextStyle(
-                          color: AppColors.textMain,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.grey, size: 28),
-          ],
-        ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 22),
+        ],
       ),
     );
   }
@@ -605,38 +527,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        ),
+      backgroundColor: AppColors.card,
+      shape: TacSheet.shape,
+      builder: (ctx) => Padding(
         padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 15),
+            left: 16,
+            right: 16,
+            top: 12),
         child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min, // 🔥 ВИПРАВЛЕНО 🔥
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                  child: Container(
-                width: 50,
-                height: 6,
-                decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(10)),
-              )),
-              const SizedBox(height: 25),
+              TacSheet.handle(),
+              const SizedBox(height: 16),
               Text(title,
-                  style: TextStyle(
-                      color: AppColors.accentBlue,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2)),
-              const SizedBox(height: 25),
+                  style: TacStyle.stencil.copyWith(fontSize: 13)),
+              const SizedBox(height: 16),
               child,
             ],
           ),
@@ -647,113 +555,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _neuField(TextEditingController ctrl, String hint,
       {bool isPass = false, IconData? icon, Widget? suffixIcon}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadowTop,
-              offset: const Offset(-3, -3),
-              blurRadius: 6),
-          BoxShadow(
-              color: AppColors.shadowBottom,
-              offset: const Offset(3, 3),
-              blurRadius: 6),
-        ],
-      ),
-      child: TextField(
-        controller: ctrl,
-        obscureText: isPass,
-        style:
-            TextStyle(color: AppColors.textMain, fontWeight: FontWeight.w600),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
-          prefixIcon:
-              icon != null ? Icon(icon, color: AppColors.accentBlue) : null,
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
-      ),
+    return TextField(
+      controller: ctrl,
+      obscureText: isPass,
+      style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.w600),
+      decoration: TacField.of(hint, icon: icon).copyWith(suffixIcon: suffixIcon),
     );
   }
 
-  Widget _switchTile(String title, bool val, Function(bool) onChanged) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadowTop,
-              offset: const Offset(-3, -3),
-              blurRadius: 6),
-          BoxShadow(
-              color: AppColors.shadowBottom,
-              offset: const Offset(3, 3),
-              blurRadius: 6),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title,
-              style: TextStyle(
-                  color: AppColors.textMain,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16)),
-          Switch(
-              value: val, onChanged: onChanged, activeColor: AppColors.accent),
-        ],
-      ),
+  Widget _themePicker() {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: AppThemeId.all.map((id) {
+        final selected = _themeId == id;
+        return SizedBox(
+          width: 156,
+          child: TacCard(
+            accent: selected ? AppColors.accent : AppColors.border,
+            onTap: () {
+              setState(() {
+                _themeId = id;
+                _isDark = id == AppThemeId.corporate ||
+                    id == AppThemeId.tactical;
+              });
+              ThemeController.set(id);
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Icon(
+                    id == AppThemeId.light
+                        ? Icons.wb_sunny_outlined
+                        : (id == AppThemeId.tactical
+                            ? Icons.nights_stay_rounded
+                            : (id == AppThemeId.corporate
+                                ? Icons.park_outlined
+                                : Icons.blur_on_rounded)),
+                    color: selected ? AppColors.accent : AppColors.muted,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(AppThemeId.title(id),
+                      style: TextStyle(
+                          color: AppColors.textMain,
+                          fontWeight: FontWeight.w800)),
+                ]),
+                const SizedBox(height: 6),
+                Text(AppThemeId.hint(id),
+                    style: TextStyle(color: AppColors.muted, fontSize: 11)),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _filterChip(String label, bool selected, Function(bool) onSelect) {
-    return GestureDetector(
+    return TacChip(
+      label: label,
+      active: selected,
       onTap: () => onSelect(!selected),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          borderRadius: BorderRadius.circular(20),
-          border: selected
-              ? Border.all(color: AppColors.accentBlue, width: 2)
-              : null,
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                      color: AppColors.shadowTop,
-                      offset: const Offset(2, 2),
-                      blurRadius: 4,
-                      spreadRadius: -1),
-                  BoxShadow(
-                      color: AppColors.shadowBottom,
-                      offset: const Offset(-2, -2),
-                      blurRadius: 4,
-                      spreadRadius: -1)
-                ]
-              : [
-                  BoxShadow(
-                      color: AppColors.shadowTop,
-                      offset: const Offset(-3, -3),
-                      blurRadius: 5),
-                  BoxShadow(
-                      color: AppColors.shadowBottom,
-                      offset: const Offset(3, 3),
-                      blurRadius: 5)
-                ],
-        ),
-        child: Text(label,
-            style: TextStyle(
-                color: selected ? AppColors.accentBlue : Colors.grey,
-                fontWeight: FontWeight.bold)),
-      ),
     );
   }
 }

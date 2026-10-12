@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
+import '../core/tactical_ui.dart';
 import '../services/db_service.dart';
 import '../services/smart_calculator.dart';
 
@@ -48,30 +50,22 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF121212);
-    const cardColor = Color(0xFF1E1E1E);
-    const accentGreen = Color(0xFF00E676);
-    const accentRed = Color(0xFFFF3D00);
-    const accentBlue = Color(0xFF00B0FF);
+    final cardColor = AppColors.card;
+    final accentGreen = AppColors.accent;
+    final accentRed = AppColors.danger;
+    final accentBlue = AppColors.accentBlue;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: bgColor,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          "АНАЛІЗ: ${widget.seasonName}",
-          style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2),
-        ),
+      backgroundColor: AppColors.bg,
+      appBar: TacAppBar(
+        title: widget.seasonName,
+        code: 'Аналіз',
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: accentGreen))
-          : _buildDashboard(cardColor, accentGreen, accentRed, accentBlue),
+      body: TacBackdrop(
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: accentGreen))
+            : _buildDashboard(cardColor, accentGreen, accentRed, accentBlue),
+      ),
     );
   }
 
@@ -110,35 +104,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: totalReady > 0
-                      ? green.withOpacity(0.5)
-                      : red.withOpacity(0.5),
-                  width: 2),
-              boxShadow: [
-                BoxShadow(
-                    color: totalReady > 0
-                        ? green.withOpacity(0.1)
-                        : red.withOpacity(0.1),
-                    blurRadius: 20,
-                    spreadRadius: 5)
-              ],
-            ),
+          TacCard(
+            accent: totalReady > 0 ? green : red,
+            padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
             child: Column(
               children: [
                 Text(
-                  "ГОТОВІ КОМПЛЕКТИ ДО ВИДАЧІ",
-                  style: TextStyle(
-                      color: totalReady > 0 ? Colors.grey : red,
-                      fontSize: 14,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.bold),
+                  "Готові комплекти до видачі",
+                  style: TacStyle.stencil.copyWith(
+                      color: totalReady > 0 ? AppColors.muted : red,
+                      fontSize: 11),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -149,46 +124,49 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       fontWeight: FontWeight.w900,
                       height: 1),
                 ),
-                const Text(
-                  "ОСІБ",
+                Text(
+                  "осіб",
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
+                      color: AppColors.textMain,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          TacCard(
+            child: Text(
+              "Комплект = повний набір зі списку сезону на 1 особу. "
+              "Якщо тут 0 — якась річ закінчилась і блокує видачу.",
+              style: TextStyle(color: AppColors.muted, fontSize: 13, height: 1.35),
+            ),
+          ),
+          const SizedBox(height: 16),
           if (isDeficit) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: red, width: 1.5),
-              ),
+            TacCard(
+              accent: red,
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: red, size: 40),
-                  const SizedBox(width: 16),
+                  Icon(Icons.warning_amber_rounded, color: red, size: 36),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("КРИТИЧНИЙ ДЕФІЦИТ",
+                        Text("Критичний дефіцит",
                             style: TextStyle(
                                 color: red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14)),
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                                fontSize: 13)),
                         const SizedBox(height: 4),
                         Text(
                           totalReady == 0
                               ? "Неможливо зібрати жодного комплекту. Причина:\n$bottleneck"
                               : "Одягу вистачає на $clothingLimit осіб, але видачу блокує:\n$bottleneck",
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 14),
+                          style: TextStyle(
+                              color: AppColors.textMain, fontSize: 14),
                         ),
                       ],
                     ),
@@ -198,11 +176,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             ),
             const SizedBox(height: 20),
           ],
-          Text(
-            "РОЗПОДІЛ ЗА РОЗМІРАМИ (ОДЯГ)",
-            style: TextStyle(
-                color: blue, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-          ),
+          const TacSection(code: 'Розміри', hint: 'одяг'),
           const SizedBox(height: 10),
           Expanded(
             child: kitsBySize.isEmpty
@@ -217,39 +191,25 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       String size = kitsBySize.keys.elementAt(index);
                       int count = kitsBySize[size]!;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
-                        ),
+                      return TacCard(
+                        margin: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Розмір: $size",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
+                              "РОЗМІР  $size",
+                              style: TextStyle(
+                                  color: AppColors.textMain,
+                                  fontSize: 16,
+                                  letterSpacing: 1.1,
+                                  fontWeight: FontWeight.w900),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: blue.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "$count шт",
-                                style: TextStyle(
-                                    color: blue,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
-                              ),
+                            Text(
+                              "$count шт",
+                              style: TextStyle(
+                                  color: blue,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16),
                             ),
                           ],
                         ),

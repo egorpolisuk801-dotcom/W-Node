@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import '../services/db_service.dart';
+import '../core/app_colors.dart';
+import '../core/tactical_ui.dart';
 
 class NormsSettingsScreen extends StatefulWidget {
   const NormsSettingsScreen({super.key});
@@ -93,39 +95,36 @@ class _NormsSettingsScreenState extends State<NormsSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF121212);
-    const cardColor = Color(0xFF1E1E1E);
-    const primaryColor = Color(0xFF00E676);
+    final bgColor = AppColors.bg;
+    final primaryColor = AppColors.accent;
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text("НОРМИ ВИДАЧІ (НА 1 ОСІБ)",
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: Colors.white)),
-        backgroundColor: bgColor,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: TacAppBar(
+        title: 'Норми видачі',
+        code: 'Норми',
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: primaryColor,
           labelColor: primaryColor,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [Tab(text: "ЗИМА"), Tab(text: "ЛІТО")],
+          unselectedLabelColor: AppColors.muted,
+          labelStyle: const TextStyle(
+              fontWeight: FontWeight.w900, letterSpacing: 1.2, fontSize: 12),
+          tabs: const [Tab(text: "Зима"), Tab(text: "Літо")],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList('winter', _winterNames, _winterNorms, Colors.cyan),
-                _buildList('summer', _summerNames, _summerNorms, Colors.orange),
-              ],
-            ),
+      body: TacBackdrop(
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: primaryColor))
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList('winter', _winterNames, _winterNorms, AppColors.ice),
+                  _buildList(
+                      'summer', _summerNames, _summerNorms, AppColors.sun),
+                ],
+              ),
+      ),
     );
   }
 
@@ -144,40 +143,35 @@ class _NormsSettingsScreenState extends State<NormsSettingsScreen>
         String name = names[i];
         int qty = norms[name] ?? 1; // За замовчуванням норма 1
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white10),
-          ),
+        return TacCard(
+          margin: const EdgeInsets.only(bottom: 8),
+          accent: themeColor,
           child: Row(
             children: [
               Expanded(
                 child: Text(name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800)),
               ),
               Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.remove_circle_outline, color: themeColor),
+                    icon: Icon(Icons.remove, color: themeColor),
                     onPressed: () => _updateNorm(seasonKey, name, -1),
                   ),
                   SizedBox(
                     width: 30,
                     child: Text("$qty",
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: AppColors.textMain,
                             fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                            fontWeight: FontWeight.w900)),
                   ),
                   IconButton(
-                    icon: Icon(Icons.add_circle_outline, color: themeColor),
+                    icon: Icon(Icons.add, color: themeColor),
                     onPressed: () => _updateNorm(seasonKey, name, 1),
                   ),
                 ],

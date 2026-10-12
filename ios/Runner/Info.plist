@@ -50,6 +50,8 @@
     <array>
         <string>remote-notification</string>
     </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Камера потрібна, щоб сканувати QR-коди на мішках і ящиках складу.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Приложению требуется доступ к сети для синхронизации с базой данных склада.</string>
 </dict>

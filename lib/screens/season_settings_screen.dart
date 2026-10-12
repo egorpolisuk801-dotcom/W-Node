@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
+import '../core/tactical_ui.dart';
 import '../services/db_service.dart';
-import 'norms_settings_screen.dart'; // 🔥 ІМПОРТ ЕКРАНУ НОРМ ВИДАЧІ
+import 'norms_settings_screen.dart';
 
 class SeasonSettingsScreen extends StatefulWidget {
   const SeasonSettingsScreen({super.key});
@@ -85,27 +86,17 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF121212);
-    const cardColor = Color(0xFF1E1E1E);
-    const primaryColor = Color(0xFF00E676);
-    const accentColor = Color(0xFF00B0FF);
+    final bgColor = AppColors.bg;
+    final primaryColor = AppColors.accent;
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text("НАЛАШТУВАННЯ СПИСКІВ",
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                color: Colors.white)),
-        backgroundColor: bgColor,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-        // 🔥 КНОПКА ПЕРЕХОДУ В НОРМИ ВИДАЧІ
+      appBar: TacAppBar(
+        title: 'Списки',
+        code: 'Списки',
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune, color: primaryColor, size: 28),
+            icon: Icon(Icons.tune, color: primaryColor, size: 24),
             onPressed: () {
               Navigator.push(
                 context,
@@ -118,57 +109,41 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: primaryColor,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: AppColors.muted,
           indicatorColor: primaryColor,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          indicatorWeight: 2,
+          labelStyle: const TextStyle(
+              fontWeight: FontWeight.w900, letterSpacing: 1.2, fontSize: 12),
           tabs: const [
-            Tab(icon: Icon(Icons.ac_unit), text: "ЗИМА"),
-            Tab(icon: Icon(Icons.wb_sunny), text: "ЛІТО"),
-            Tab(icon: Icon(Icons.handyman), text: "ВИДАЧА"),
+            Tab(icon: Icon(Icons.ac_unit, size: 18), text: "Зима"),
+            Tab(icon: Icon(Icons.wb_sunny, size: 18), text: "Літо"),
+            Tab(icon: Icon(Icons.handyman, size: 18), text: "Видача"),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5))
-                ],
-              ),
+      body: TacBackdrop(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: TextField(
                 onChanged: _filterItems,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                decoration: InputDecoration(
-                  hintText: "Пошук...",
-                  hintStyle: TextStyle(color: Colors.grey[600]),
-                  prefixIcon: const Icon(Icons.search, color: accentColor),
-                  border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                ),
+                style: TextStyle(color: AppColors.textMain, fontSize: 15),
+                decoration: TacField.of('Пошук…', icon: Icons.search),
               ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList("winter", _winterList, const Color(0xFF00B0FF)),
-                _buildList("summer", _summerList, const Color(0xFFFFA000)),
-                _buildList("inventory", _invList, const Color(0xFFE040FB)),
-              ],
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList("winter", _winterList, const Color(0xFF00B0FF)),
+                  _buildList("summer", _summerList, const Color(0xFFFFA000)),
+                  _buildList("inventory", _invList, const Color(0xFFE040FB)),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -198,90 +173,65 @@ class _SeasonSettingsScreenState extends State<SeasonSettingsScreen>
         if (warehouse.contains("ООС")) whColor = const Color(0xFF00E676);
         if (warehouse.contains("ППД")) whColor = const Color(0xFF2979FF);
 
-        return GestureDetector(
+        return TacCard(
+          margin: const EdgeInsets.only(bottom: 8),
+          accent: isChecked ? themeColor : AppColors.border,
           onTap: () => _toggleItem(listType, itemId, isChecked),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(16),
-              border: isChecked
-                  ? Border.all(color: themeColor, width: 2)
-                  : Border.all(color: Colors.white10, width: 1),
-              boxShadow: isChecked
-                  ? [
-                      BoxShadow(
-                          color: themeColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4))
-                    ]
-                  : [
-                      const BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 4,
-                          offset: Offset(0, 2))
-                    ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isChecked ? themeColor : Colors.transparent,
-                    border: Border.all(
-                        color: isChecked ? themeColor : Colors.grey[700]!,
-                        width: 2),
-                  ),
-                  child: isChecked
-                      ? const Icon(Icons.check, size: 18, color: Colors.white)
-                      : null,
+          child: Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isChecked ? themeColor : Colors.transparent,
+                  border: Border.all(
+                      color: isChecked ? themeColor : AppColors.muted, width: 1.4),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: isChecked
-                                  ? FontWeight.bold
-                                  : FontWeight.normal)),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: whColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                              border:
-                                  Border.all(color: whColor.withOpacity(0.5)),
-                            ),
-                            child: Text(warehouse,
-                                style: TextStyle(
-                                    color: whColor,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold)),
+                child: isChecked
+                    ? const Icon(Icons.check, size: 14, color: Colors.black)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        style: TextStyle(
+                            color: AppColors.textMain,
+                            fontSize: 15,
+                            fontWeight: isChecked
+                                ? FontWeight.w900
+                                : FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: whColor.withOpacity(0.16),
+                            border: Border.all(color: whColor.withOpacity(0.5)),
                           ),
-                          const SizedBox(width: 8),
-                          if (category.isNotEmpty)
-                            Text(category,
-                                style: TextStyle(
-                                    color: Colors.grey[500], fontSize: 12)),
-                        ],
-                      ),
-                    ],
-                  ),
+                          child: Text(warehouse,
+                              style: TextStyle(
+                                  color: whColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8)),
+                        ),
+                        const SizedBox(width: 8),
+                        if (category.isNotEmpty)
+                          Text(category,
+                              style: TextStyle(
+                                  color: AppColors.muted, fontSize: 12)),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

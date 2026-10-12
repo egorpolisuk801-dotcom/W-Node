@@ -24,16 +24,38 @@ class SmartIcons {
   static IconData getIconForName(String itemName) {
     String name = itemName.toLowerCase().trim();
 
-    // Если при добавлении в названии есть что-то из инвентаря — покажем инструмент
     if (name.contains('генератор') ||
-        name.contains('станция') ||
+        name.contains('станці') ||
         name.contains('лопата') ||
         name.contains('пила') ||
-        name.contains('дрон')) {
+        name.contains('дрон') ||
+        name.contains('інструмент')) {
       return Icons.handyman_rounded;
     }
+    if (name.contains('черевик') ||
+        name.contains('берц') ||
+        name.contains('кросів') ||
+        name.contains('взутт')) {
+      return Icons.hiking_rounded;
+    }
+    if (name.contains('куртк') ||
+        name.contains('бушлат') ||
+        name.contains('кофт') ||
+        name.contains('футболка') ||
+        name.contains('штани') ||
+        name.contains('брюк')) {
+      return Icons.checkroom_rounded;
+    }
+    if (name.contains('шапк') ||
+        name.contains('каск') ||
+        name.contains('феск') ||
+        name.contains('панам')) {
+      return Icons.sports_hockey_rounded;
+    }
+    if (name.contains('рюкзак') || name.contains('баул')) {
+      return Icons.backpack_rounded;
+    }
 
-    // По умолчанию для всего остального (вещевое имущество) — ящик
     return Icons.inventory_2_rounded;
   }
 

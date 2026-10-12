@@ -6,7 +6,9 @@ import '../core/app_colors.dart';
 import '../services/db_service.dart';
 import '../core/user_config.dart';
 import '../core/notification_helper.dart';
-import '../core/smart_icons.dart'; // 🔥 ІМПОРТУЄМО НАШ НОВИЙ МОЗГ
+import '../core/smart_icons.dart';
+import '../core/size_grids.dart';
+import '../core/tactical_ui.dart';
 
 class AddUniversalScreen extends StatefulWidget {
   const AddUniversalScreen({super.key});
@@ -19,81 +21,15 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _simpleQtyCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
 
   // 🔥 Змінні для живої іконки
   IconData _currentSmartIcon = Icons.inventory_2_rounded;
-  Color _currentIconColor = Colors.blueAccent;
+  Color _currentIconColor = AppColors.accentBlue;
 
-  // --- ДАННЫЕ СЕТОК ---
-  final List<String> _digitsRows = ["1", "2", "3", "4", "5", "6", "7", "8"];
-  final List<String> _digitsCols = [
-    "40",
-    "42",
-    "44",
-    "46",
-    "48",
-    "50",
-    "52",
-    "54",
-    "56",
-    "58",
-    "60",
-    "62",
-    "64",
-    "66",
-    "68",
-    "70"
-  ];
-  final List<String> _lettersRows = ["XS", "S", "M", "R", "L", "XL"];
-  final List<String> _lettersCols = [
-    "XS",
-    "S",
-    "M",
-    "L",
-    "XL",
-    "XXL",
-    "3XL",
-    "4XL"
-  ];
-  final List<String> _shoesCols = List.generate(18, (i) => "${35 + i}");
-  final List<String> _hatsCols = [
-    "54",
-    "55",
-    "56",
-    "57",
-    "58",
-    "59",
-    "60",
-    "61",
-    "62",
-    "63"
-  ];
-  final List<String> _hatsRangeCols = [
-    "54-55",
-    "56-57",
-    "58-59",
-    "60-61",
-    "62-63"
-  ];
-  final List<String> _hatsWideCols = ["54-56", "58-60", "62-64"];
-  final List<String> _glovesCols = ["1", "2", "3", "4"];
-  final List<String> _glovesSLCols = ["S", "M", "L", "XL"];
-  final List<String> _linenCols = List.generate(15, (i) => "${42 + (i * 2)}");
-
-  // --- СПИСОК ТИПОВ ---
-  final List<String> _clothesTypes = [
-    "Цифри",
-    "Букви",
-    "Взуття",
-    "Головні убори",
-    "ГУ (Діапазон)",
-    "ГУ (Широкі)",
-    "Рукавички",
-    "Рукавички (S-XL)",
-    "Білизна",
-    "Просте"
-  ];
-  final List<String> _invTypes = ["Букви", "Цифри", "Взуття", "ГУ (Діапазон)"];
+  List<SizeGrid> _catalog = SizeGrids.catalog();
+  String? _gridId;
+  bool _useSimple = false;
 
   bool _isInventory = false;
 
@@ -101,7 +37,6 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   List<String> _warehouses = [];
   String _selectedWh = "ООС";
 
-  String _currentSubType = "Цифри";
   String _selectedRow = "1";
   String _selectedCategory = "I";
 
@@ -114,9 +49,61 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   void initState() {
     super.initState();
     _loadWarehouses();
+    _ensureGrid();
+    _refreshGrids();
 
     // 🔥 Слухаємо кожну літеру, яку вводить користувач
     _nameCtrl.addListener(_updateSmartIcon);
+  }
+
+  List<SizeGrid> get _visibleGrids =>
+      SizeGrids.forMode(_catalog, inventory: _isInventory);
+
+  SizeGrid? get _activeGrid {
+    for (final grid in _visibleGrids) {
+      if (grid.id == _gridId) return grid;
+    }
+    return null;
+  }
+
+  bool get _isSimple {
+    if (_isInventory) return !_invUseGrid || _activeGrid == null;
+    return _useSimple || _activeGrid == null;
+  }
+
+  void _ensureGrid() {
+    final grids = _visibleGrids;
+    if (grids.isEmpty) {
+      _gridId = null;
+      return;
+    }
+    final current = _activeGrid;
+    if (current == null) {
+      _gridId = grids.first.id;
+      _selectedRow = grids.first.rows.isNotEmpty ? grids.first.rows.first : '';
+      return;
+    }
+    if (!current.rows.contains(_selectedRow) && current.rows.isNotEmpty) {
+      _selectedRow = current.rows.first;
+    }
+  }
+
+  Future<void> _refreshGrids() async {
+    await DBService().syncSizeGrids();
+    if (!mounted) return;
+    setState(() {
+      _catalog = SizeGrids.catalog();
+      _ensureGrid();
+    });
+  }
+
+  void _selectGrid(SizeGrid grid) {
+    setState(() {
+      _useSimple = false;
+      _gridId = grid.id;
+      _quantities.clear();
+      _selectedRow = grid.rows.isNotEmpty ? grid.rows.first : '';
+    });
   }
 
   // 🔥 МЕТОД ДЛЯ ЗАВАНТАЖЕННЯ СПИСКУ СКЛАДІВ З НАЛАШТУВАНЬ 🔥
@@ -144,6 +131,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     _nameCtrl.dispose();
     _locationCtrl.dispose();
     _simpleQtyCtrl.dispose();
+    _priceCtrl.dispose();
     super.dispose();
   }
 
@@ -155,59 +143,19 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     });
   }
 
-  bool _shouldShowType(String type) {
-    final cfg = UserConfig();
-    if (_isInventory) return true;
-    switch (type) {
-      case "Цифри":
-        return cfg.itemShowDigits;
-      case "Букви":
-        return cfg.itemShowLetters;
-      case "Взуття":
-        return cfg.itemShowShoes;
-      case "Головні убори":
-        return cfg.itemShowHats;
-      case "ГУ (Діапазон)":
-        return cfg.itemShowHatsR;
-      case "ГУ (Широкі)":
-        return cfg.itemShowHatsW;
-      case "Рукавички":
-        return cfg.itemShowGloves;
-      case "Рукавички (S-XL)":
-        return cfg.itemShowGlovesSL;
-      case "Білизна":
-        return cfg.itemShowLinen;
-      default:
-        return true;
-    }
-  }
-
   void _setMode(bool inventory) {
     setState(() {
       _isInventory = inventory;
       _quantities.clear();
       _simpleQtyCtrl.clear();
-      _currentSubType = "Цифри";
-      _selectedRow = "1";
-    });
-  }
-
-  void _setSubType(String type) {
-    setState(() {
-      _currentSubType = type;
-      _quantities.clear();
-      if (type == "Цифри")
-        _selectedRow = "1";
-      else if (type == "Букви")
-        _selectedRow = "XS";
-      else
-        _selectedRow = "";
+      _useSimple = false;
+      _gridId = null;
+      _ensureGrid();
     });
   }
 
   int get _totalCount {
-    if ((_isInventory && !_invUseGrid) ||
-        (!_isInventory && _currentSubType == "Просте")) {
+    if (_isSimple) {
       return int.tryParse(_simpleQtyCtrl.text) ?? 0;
     }
     int total = 0;
@@ -222,7 +170,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: TacSheet.dialog(),
         title: Text("$key : Кількість",
             style: TextStyle(color: AppColors.textMain)),
         content: _neuTextField(qtyCtrl, "0", isNum: true),
@@ -230,7 +178,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx),
               child:
-                  const Text("Відміна", style: TextStyle(color: Colors.grey))),
+                  Text("Скасувати", style: TextStyle(color: AppColors.muted))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
             onPressed: () {
@@ -238,7 +186,8 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
               if (val != null) setState(() => _quantities[key] = val);
               Navigator.pop(ctx);
             },
-            child: const Text("ОК", style: TextStyle(color: Colors.white)),
+            child: Text("ОК",
+                style: TextStyle(color: AppColors.onAccent)),
           )
         ],
       ),
@@ -262,8 +211,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
     try {
       int total = _totalCount;
       Map<String, int> finalData = {};
-      bool isSimple = (_isInventory && !_invUseGrid) ||
-          (!_isInventory && _currentSubType == "Просте");
+      bool isSimple = _isSimple;
 
       if (!isSimple) {
         _quantities.forEach((k, v) {
@@ -279,10 +227,13 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
         'location': _locationCtrl.text,
         'category': _selectedCategory,
         'warehouse': _selectedWh,
-        'type': _isInventory ? "Інвентар" : _currentSubType,
+        'type': isSimple
+            ? (_isInventory ? 'Інвентар' : 'Просте')
+            : (_activeGrid?.name ?? 'Просте'),
         'total': total,
         'size_data': finalData,
         'is_inventory': _isInventory ? 1 : 0,
+        'price': double.tryParse(_priceCtrl.text.replaceAll(',', '.')) ?? 0.0,
       };
 
       await DBService().saveItem(item);
@@ -304,15 +255,12 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: Text(_isInventory ? "Додати Інвентар" : "Додати Одяг",
-            style: TextStyle(
-                color: AppColors.textMain, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.bg,
-        iconTheme: IconThemeData(color: AppColors.textMain),
-        elevation: 0,
+      appBar: TacAppBar(
+        title: _isInventory ? 'Додати інвентар' : 'Додати річ',
+        code: 'Нова позиція',
       ),
-      body: SingleChildScrollView(
+      body: TacBackdrop(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,6 +283,11 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             // 🔥 ВИКЛИКАЄМО ТЕКСТОВЕ ПОЛЕ З ІКОНКОЮ
             _neuTextField(_nameCtrl, "Назва (напр. Футболка)",
                 icon: _currentSmartIcon, iconColor: _currentIconColor),
+            const SizedBox(height: 10),
+            _neuTextField(_priceCtrl, "Ціна за шт, грн",
+                isNum: true,
+                icon: Icons.payments_outlined,
+                iconColor: AppColors.accent),
             const SizedBox(height: 10),
 
             _neuTextField(_locationCtrl, "Місце (напр. Полиця 2)"),
@@ -386,57 +339,45 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                   ]),
               ],
             ),
-            if (!_isInventory || (_isInventory && _invUseGrid))
+            if (!_isInventory || _invUseGrid)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                    children:
-                        (_isInventory ? _invTypes : _clothesTypes).map((t) {
-                  if (!_shouldShowType(t)) return const SizedBox();
-                  return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _typeChip(t));
-                }).toList()),
+                child: Row(children: [
+                  ..._visibleGrids.map((grid) {
+                    return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _typeChip(
+                            grid.name,
+                            grid.id == _gridId &&
+                                (_isInventory || !_useSimple),
+                            () => _selectGrid(grid)));
+                  }),
+                  if (!_isInventory)
+                    _typeChip('Просте', _useSimple, () {
+                      setState(() {
+                        _useSimple = true;
+                        _quantities.clear();
+                      });
+                    }),
+                ]),
               ),
             const SizedBox(height: 5),
-            if ((_isInventory && !_invUseGrid) ||
-                (!_isInventory && _currentSubType == "Просте"))
+            if (_isSimple)
               _neuTextField(_simpleQtyCtrl, "Введіть кількість (шт)",
                   isNum: true)
             else
               _buildUniversalGridBody(),
             const SizedBox(height: 40),
-            GestureDetector(
-              onTap: _isSaving ? null : _save,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 55,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    color: _isSaving ? Colors.grey : AppColors.accent,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: _isSaving
-                        ? null
-                        : [
-                            BoxShadow(
-                                color: AppColors.accent.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4))
-                          ]),
-                child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("ЗБЕРЕГТИ",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2)),
-              ),
+            TacButton(
+              label: 'Зберегти',
+              icon: Icons.save_outlined,
+              onTap: _isSaving ? () {} : _save,
             ),
             const SizedBox(height: 30),
           ],
         ),
+      ),
       ),
     );
   }
@@ -454,28 +395,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   }
 
   Widget _buildUniversalGridBody() {
-    switch (_currentSubType) {
-      case "Цифри":
-        return _build2DGrid(_digitsRows, _digitsCols);
-      case "Букви":
-        return _build2DGrid(_lettersRows, _lettersCols);
-      case "Взуття":
-        return _build1DGrid(_shoesCols);
-      case "Головні убори":
-        return _build1DGrid(_hatsCols);
-      case "ГУ (Діапазон)":
-        return _build1DGrid(_hatsRangeCols);
-      case "ГУ (Широкі)":
-        return _build1DGrid(_hatsWideCols);
-      case "Рукавички":
-        return _build1DGrid(_glovesCols);
-      case "Рукавички (S-XL)":
-        return _build1DGrid(_glovesSLCols);
-      case "Білизна":
-        return _build1DGrid(_linenCols);
-      default:
-        return const SizedBox();
-    }
+    final grid = _activeGrid;
+    if (grid == null) return const SizedBox();
+    if (grid.isMatrix) return _build2DGrid(grid.rows, grid.cols);
+    return _build1DGrid(grid.cols);
   }
 
   Widget _build1DGrid(List<String> items) {
@@ -497,7 +420,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
 
   Widget _build2DGrid(List<String> rows, List<String> cols) {
     return Column(children: [
-      Text("ЗРІСТ:", style: TextStyle(color: Colors.grey, fontSize: 11)),
+      Text("Зріст", style: TextStyle(color: Colors.grey, fontSize: 11)),
       const SizedBox(height: 5),
       SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -515,39 +438,20 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
                       height: 40,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                          color: AppColors.bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: active
-                              ? Border.all(
-                                  color: _isInventory
-                                      ? Colors.purple
-                                      : AppColors.accentBlue,
-                                  width: 2)
-                              : null,
-                          boxShadow: active
-                              ? [
-                                  BoxShadow(
-                                      color: (_isInventory
-                                              ? Colors.purple
-                                              : AppColors.accentBlue)
-                                          .withOpacity(0.3),
-                                      blurRadius: 6)
-                                ]
-                              : [
-                                  BoxShadow(
-                                      color: AppColors.shadowTop,
-                                      offset: Offset(-2, -2),
-                                      blurRadius: 2),
-                                  BoxShadow(
-                                      color: AppColors.shadowBottom,
-                                      offset: Offset(2, 2),
-                                      blurRadius: 2)
-                                ]),
+                          color: AppColors.card,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                              color: active
+                                  ? (_isInventory
+                                      ? AppColors.silk
+                                      : AppColors.accentBlue)
+                                  : AppColors.border,
+                              width: active ? 2 : 1)),
                       child: Text(r,
                           style: TextStyle(
                               color: active
                                   ? (_isInventory
-                                      ? Colors.purple
+                                      ? AppColors.silk
                                       : AppColors.accentBlue)
                                   : AppColors.textMain,
                               fontWeight: FontWeight.bold,
@@ -556,7 +460,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
           }).toList())),
       const SizedBox(height: 10),
       Text("Розміри ($_selectedRow):",
-          style: const TextStyle(color: Colors.grey, fontSize: 11)),
+          style: TextStyle(color: AppColors.muted, fontSize: 11)),
       const SizedBox(height: 10),
       Container(
         padding: const EdgeInsets.all(5),
@@ -582,7 +486,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   Widget _gridBtn(
       String label, int qty, VoidCallback onTap, VoidCallback onLong) {
     bool active = qty > 0;
-    Color actColor = _isInventory ? Colors.purple : AppColors.accentBlue;
+    Color actColor = _isInventory ? AppColors.silk : AppColors.accentBlue;
     double fontSize = label.length > 3 ? 11 : 13;
 
     return GestureDetector(
@@ -594,24 +498,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             height: 45,
             margin: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(12),
-                border: active ? Border.all(color: actColor, width: 2) : null,
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                            color: actColor.withOpacity(0.3), blurRadius: 6)
-                      ]
-                    : [
-                        BoxShadow(
-                            color: AppColors.shadowTop,
-                            offset: const Offset(-2, -2),
-                            blurRadius: 3),
-                        BoxShadow(
-                            color: AppColors.shadowBottom,
-                            offset: const Offset(2, 2),
-                            blurRadius: 3)
-                      ]),
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: active ? actColor : AppColors.border, width: 1.5)),
             child: Stack(children: [
               Center(
                   child: Text(label,
@@ -635,44 +525,24 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             ])));
   }
 
-  Widget _typeChip(String t) {
-    bool act = _currentSubType == t;
+  Widget _typeChip(String label, bool act, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () => _setSubType(t),
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-            color: AppColors.bg,
-            borderRadius: BorderRadius.circular(16),
-            border: act
-                ? Border.all(
-                    color: _isInventory ? Colors.purple : AppColors.accentBlue,
-                    width: 1.5)
-                : null,
-            boxShadow: act
-                ? [
-                    BoxShadow(
-                        color: (_isInventory
-                                ? Colors.purple
-                                : AppColors.accentBlue)
-                            .withOpacity(0.2),
-                        blurRadius: 6)
-                  ]
-                : [
-                    BoxShadow(
-                        color: AppColors.shadowTop,
-                        offset: Offset(-2, -2),
-                        blurRadius: 3),
-                    BoxShadow(
-                        color: AppColors.shadowBottom,
-                        offset: Offset(2, 2),
-                        blurRadius: 3)
-                  ]),
-        child: Text(t,
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+                color: act
+                    ? (_isInventory ? AppColors.silk : AppColors.accentBlue)
+                    : AppColors.border,
+                width: act ? 1.5 : 1)),
+        child: Text(label,
             style: TextStyle(
                 color: act
-                    ? (_isInventory ? Colors.purple : AppColors.accentBlue)
+                    ? (_isInventory ? AppColors.silk : AppColors.accentBlue)
                     : Colors.grey,
                 fontWeight: FontWeight.bold,
                 fontSize: 12)),
@@ -687,20 +557,11 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-                color: active ? AppColors.bg : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                            color: AppColors.shadowTop,
-                            offset: Offset(-2, -2),
-                            blurRadius: 4),
-                        BoxShadow(
-                            color: AppColors.shadowBottom,
-                            offset: Offset(2, 2),
-                            blurRadius: 4)
-                      ]
-                    : null),
+                color: active ? AppColors.card : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: active
+                    ? Border.all(color: AppColors.border)
+                    : Border.all(color: Colors.transparent)),
             alignment: Alignment.center,
             child: Text(txt,
                 style: TextStyle(
@@ -715,20 +576,9 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadowTop,
-              offset: const Offset(2, 2),
-              blurRadius: 2,
-              spreadRadius: -1),
-          BoxShadow(
-              color: AppColors.shadowBottom,
-              offset: const Offset(-2, -2),
-              blurRadius: 2,
-              spreadRadius: -1)
-        ],
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -760,7 +610,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   }
 
   Widget _neuSelectableBtn(String text, bool active, VoidCallback onTap) {
-    Color actColor = _isInventory ? Colors.purple : AppColors.accentBlue;
+    Color actColor = _isInventory ? AppColors.silk : AppColors.accentBlue;
     return GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -769,20 +619,10 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-                color: active ? AppColors.bg : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                            color: AppColors.shadowTop,
-                            offset: const Offset(-2, -2),
-                            blurRadius: 4),
-                        BoxShadow(
-                            color: AppColors.shadowBottom,
-                            offset: const Offset(2, 2),
-                            blurRadius: 4)
-                      ]
-                    : null),
+                color: active ? AppColors.card : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: active ? actColor : Colors.transparent)),
             child: Text(text,
                 style: TextStyle(
                     color: active ? actColor : Colors.grey,
@@ -795,21 +635,9 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
         height: 60,
         alignment: Alignment.center,
         padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-            color: AppColors.bg,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.shadowTop,
-                  offset: const Offset(-2, -2),
-                  blurRadius: 4),
-              BoxShadow(
-                  color: AppColors.shadowBottom,
-                  offset: const Offset(2, 2),
-                  blurRadius: 4)
-            ]),
+        decoration: AppColors.cardDeco(),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text("ВСЬОГО",
+          const Text("Усього",
               style: TextStyle(
                   fontSize: 9,
                   color: Colors.grey,
@@ -826,25 +654,13 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   Widget _neuTextField(TextEditingController ctrl, String hint,
       {bool isNum = false, IconData? icon, Color? iconColor}) {
     return Container(
-        decoration: BoxDecoration(
-            color: AppColors.bg,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.shadowTop,
-                  offset: const Offset(2, 2),
-                  blurRadius: 2,
-                  spreadRadius: -1),
-              BoxShadow(
-                  color: AppColors.shadowBottom,
-                  offset: const Offset(-2, -2),
-                  blurRadius: 2,
-                  spreadRadius: -1)
-            ]),
+        decoration: AppColors.cardDeco(),
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: TextField(
             controller: ctrl,
-            keyboardType: isNum ? TextInputType.number : TextInputType.text,
+            keyboardType: isNum
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.text,
             style: TextStyle(
                 color: AppColors.textMain,
                 fontSize: 14,
@@ -862,31 +678,7 @@ class _AddUniversalScreenState extends State<AddUniversalScreen> {
   }
 
   BoxDecoration _neuDeco({bool pressed = false}) {
-    return BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: pressed
-            ? [
-                BoxShadow(
-                    color: AppColors.shadowTop,
-                    offset: const Offset(2, 2),
-                    blurRadius: 3,
-                    spreadRadius: -1),
-                BoxShadow(
-                    color: AppColors.shadowBottom,
-                    offset: const Offset(-2, -2),
-                    blurRadius: 3,
-                    spreadRadius: -1)
-              ]
-            : [
-                BoxShadow(
-                    color: AppColors.shadowTop,
-                    offset: const Offset(-3, -3),
-                    blurRadius: 5),
-                BoxShadow(
-                    color: AppColors.shadowBottom,
-                    offset: const Offset(3, 3),
-                    blurRadius: 5)
-              ]);
+    return AppColors.cardDeco(
+        borderColor: pressed ? AppColors.border : AppColors.border);
   }
 }

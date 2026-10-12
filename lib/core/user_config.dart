@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class UserConfig {
   static final UserConfig _instance = UserConfig._internal();
@@ -37,7 +38,85 @@ class UserConfig {
   String get wh1Name => _getValue('wh1_name', 'Склад-1');
   String get wh2Name => _getValue('wh2_name', 'Склад-2');
 
-  bool get isDarkMode => _getValue('is_dark_mode', true);
+  List<String> get warehouses {
+    try {
+      if (wh1Name.startsWith('[')) {
+        final parsed = jsonDecode(wh1Name);
+        if (parsed is List) {
+          final names = parsed
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+          if (names.isNotEmpty) return names;
+        }
+      }
+    } catch (_) {}
+    final pair =
+        [wh1Name, wh2Name].where((e) => e.isNotEmpty).toList();
+    return pair.isEmpty ? const ['ООС', 'ППД'] : pair;
+  }
+
+  bool get isDarkMode {
+    final id = themeId;
+    return id == 'corporate' || id == 'tactical';
+  }
+
+  String get themeId {
+    final stored = _getValue('theme_id', '');
+    if (stored.isNotEmpty) return stored;
+    return _getValue('is_dark_mode', true) ? 'hud' : 'light';
+  }
+
+  Future<void> setThemeId(String id) async {
+    if (_prefs == null) await load();
+    await _prefs?.setString('theme_id', id);
+    await _prefs?.setBool(
+        'is_dark_mode', id == 'corporate' || id == 'tactical');
+  }
+
+  String get lastIssuePerson => _getValue('last_issue_person', '');
+
+  Future<void> setLastIssuePerson(String name) async {
+    if (_prefs == null) await load();
+    await _prefs?.setString('last_issue_person', name);
+  }
+
+  String get _todayStamp {
+    final n = DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+  }
+
+  int get todayHits {
+    if (_getValue('fun_day', '') != _todayStamp) return 0;
+    return _prefs?.getInt('fun_hits') ?? 0;
+  }
+
+  Future<int> bumpTodayHits() async {
+    if (_prefs == null) await load();
+    final today = _todayStamp;
+    if (_getValue('fun_day', '') != today) {
+      await _prefs?.setString('fun_day', today);
+      await _prefs?.setInt('fun_hits', 1);
+      return 1;
+    }
+    final next = todayHits + 1;
+    await _prefs?.setInt('fun_hits', next);
+    return next;
+  }
+
+  String get sizeGridsJson => _getValue('size_grids', '');
+
+  Future<void> setSizeGridsJson(String value) async {
+    if (_prefs == null) await load();
+    await _prefs?.setString('size_grids', value);
+  }
+
+  String get lastSyncAt => _getValue('last_sync_at', '');
+
+  Future<void> setLastSyncNow() async {
+    if (_prefs == null) await load();
+    await _prefs?.setString('last_sync_at', DateTime.now().toIso8601String());
+  }
 
   // === ВИДИМОСТЬ КАТЕГОРИЙ ===
   bool get itemShowDigits => _getValue('show_digits', true);
