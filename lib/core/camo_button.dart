@@ -1,8 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'theme_controller.dart';
+import 'user_config.dart';
 
 /// Підсвітка клавіші. Сама клавіша завжди лісова, колір смужки різний.
 enum CamoTone { olive, moss, khaki, brown, deep }
+
+Color styleInk(CamoTone tone) {
+  final id = UserConfig().themeId;
+  if (id == AppThemeId.brutal) {
+    return tone == CamoTone.deep ? Colors.white : const Color(0xFF111111);
+  }
+  if (id == AppThemeId.cyber) return const Color(0xFFE7F6FF);
+  if (id == AppThemeId.neo) return const Color(0xFF2C3644);
+  return const Color(0xFF17304A);
+}
+
+Color _brutalFill(CamoTone tone) {
+  switch (tone) {
+    case CamoTone.olive:
+      return const Color(0xFFFFE14A);
+    case CamoTone.moss:
+      return const Color(0xFFB6FF4A);
+    case CamoTone.khaki:
+      return const Color(0xFFFF7AD9);
+    case CamoTone.brown:
+      return const Color(0xFF7AD7FF);
+    case CamoTone.deep:
+      return const Color(0xFF111111);
+  }
+}
 
 class CamoToneData {
   static Color glow(CamoTone tone) {
@@ -167,34 +194,65 @@ class CamoPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glow = CamoToneData.glow(tone);
+    final id = UserConfig().themeId;
+    final brutal = id == AppThemeId.brutal;
+    final neo = id == AppThemeId.neo;
+    final cyber = id == AppThemeId.cyber;
+    final radius = brutal ? 6.0 : (cyber ? 6.0 : 18.0);
+    final fill = brutal
+        ? _brutalFill(tone)
+        : neo
+            ? const Color(0xFFE4EAF3)
+            : cyber
+                ? const Color(0xFF100E18)
+                : const Color(0xB8FFFFFF);
+    final inkBorder = brutal
+        ? const Color(0xFF111111)
+        : cyber
+            ? CamoToneData.glow(tone)
+            : id == AppThemeId.glass
+                ? const Color(0xEEFFFFFF)
+                : const Color(0x00000000);
     final plate = Opacity(
-      opacity: onTap == null ? 0.42 : (dim ? 0.62 : 1),
+      opacity: onTap == null ? 0.42 : (dim ? 0.72 : 1),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          color: fill,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: inkBorder,
+            width: brutal ? 3 : (cyber ? 1.6 : 1.2),
+          ),
           boxShadow: dim
               ? const []
-              : [
-                  const BoxShadow(
-                    color: Color(0x99000000),
-                    offset: Offset(0, 3),
-                    blurRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: glow.withOpacity(0.42),
-                    offset: const Offset(0, 7),
-                    blurRadius: 12,
-                  ),
-                ],
+              : brutal
+                  ? const [
+                      BoxShadow(color: Color(0xFF111111), offset: Offset(4, 4)),
+                    ]
+                  : neo
+                      ? const [
+                          BoxShadow(
+                            color: Color(0xFFF8FBFF),
+                            offset: Offset(-5, -5),
+                            blurRadius: 10,
+                          ),
+                          BoxShadow(
+                            color: Color(0xFFA3B1C6),
+                            offset: Offset(5, 5),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: cyber
+                                ? CamoToneData.glow(tone).withOpacity(0.45)
+                                : const Color(0x22182740),
+                            offset: const Offset(0, 8),
+                            blurRadius: cyber ? 14 : 16,
+                          ),
+                        ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: CustomPaint(
-            painter: WoodlandKeyPainter(tone),
-            child: Padding(padding: padding, child: child),
-          ),
-        ),
+        child: Padding(padding: padding, child: child),
       ),
     );
     if (onTap == null) return plate;
@@ -230,7 +288,7 @@ class CamoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const ink = Color(0xFFF4F0E4);
+    final ink = styleInk(tone);
     final style = TextStyle(
       color: ink,
       fontWeight: FontWeight.w800,

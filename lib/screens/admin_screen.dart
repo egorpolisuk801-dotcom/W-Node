@@ -6,11 +6,12 @@ import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/admin_link.dart';
+import '../core/app_colors.dart';
 import '../core/camo_button.dart';
 
 /// Адмінка на телефоні: ті самі пристрої і термінал, що на Mac і Windows.
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({super.key});
+  AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -24,13 +25,13 @@ class _AdminScreenState extends State<AdminScreen> {
   bool _downloading = false;
   double _progress = 0;
 
-  static const _bg = Color(0xFF10140F);
-  static const _card = Color(0xFF1A2218);
-  static const _border = Color(0xFF3A4632);
-  static const _copper = Color(0xFFC6D36A);
-  static const _text = Color(0xFFF3F0E6);
-  static const _muted = Color(0xFFA8B09A);
-  static const _live = Color(0xFF8FA86A);
+  Color get _bg => AppColors.bg;
+  Color get _card => AppColors.card;
+  Color get _border => AppColors.border;
+  Color get _copper => AppColors.accent;
+  Color get _text => AppColors.textMain;
+  Color get _muted => AppColors.muted;
+  Color get _live => AppColors.accent;
   int _seenLines = 0;
   bool _armed = false;
 
@@ -42,7 +43,7 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   void _onLink() {
-    final lines = (_link.state['lines'] as List?) ?? const [];
+    final lines = (_link.state['lines'] as List?) ?? [];
     if (_armed && lines.length > _seenLines) {
       final last = lines.isEmpty ? null : lines.last;
       final name = last is Map ? '${last['name'] ?? ''}' : '';
@@ -67,57 +68,57 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     final state = _link.state;
-    final devices = (state['devices'] as List?) ?? const [];
-    final changes = (state['changes'] as List?) ?? const [];
-    final lines = (state['lines'] as List?) ?? const [];
+    final devices = (state['devices'] as List?) ?? [];
+    final changes = (state['changes'] as List?) ?? [];
+    final lines = (state['lines'] as List?) ?? [];
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             Row(
               children: [
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded, color: _text),
+                  icon: Icon(Icons.arrow_back_rounded, color: _text),
                 ),
                 _mark(),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('КОМАНДНИЙ ЦЕНТР',
+                      Text('КОМАНДНИЙ ЦЕНТР',
                           style: TextStyle(
                               color: _copper,
                               fontSize: 11,
                               fontWeight: FontWeight.w800)),
-                      const Text('Адмін',
+                      Text('Адмін',
                           style: TextStyle(
                               color: _text,
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
                               height: 1.0)),
                       Text('v${_link.versionLabel}',
-                          style: const TextStyle(color: _muted, fontSize: 12)),
+                          style: TextStyle(color: _muted, fontSize: 12)),
                     ],
                   ),
                 ),
                 _pill(_link.status, _link.live),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             if (!_link.tailscaleInstalled) _tailscaleAlert(),
-            if (!_link.tailscaleInstalled) const SizedBox(height: 12),
+            if (!_link.tailscaleInstalled) SizedBox(height: 12),
             _banner(state),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _notice(state),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _cardBox(
               'ПРИСТРОЇ',
               devices.isEmpty
-                  ? const [
+                  ? [
                       Text('Поки немає інших пристроїв. Кожен комп’ютер і телефон з цією адмінкою з’явиться тут.',
                           style: TextStyle(color: _muted, height: 1.35))
                     ]
@@ -126,16 +127,16 @@ class _AdminScreenState extends State<AdminScreen> {
                         if (raw is Map) _device(raw),
                     ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _cardBox(
               'ХТО ЗАХОДИВ',
               _visits(state),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _cardBox(
               'ЗМІНИ',
               changes.isEmpty
-                  ? const [
+                  ? [
                       Text('Список з’явиться, коли буде зв’язок.',
                           style: TextStyle(color: _muted))
                     ]
@@ -144,19 +145,19 @@ class _AdminScreenState extends State<AdminScreen> {
                         if (raw is Map) _change(raw),
                     ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _cardBox('ТЕРМІНАЛ', [
               Container(
                 height: 200,
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1018),
+                  color: Color(0xFF0B1018),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF3A4632)),
+                  border: Border.all(color: Color(0xFF3A4632)),
                 ),
                 child: lines.isEmpty
-                    ? const Text('Спільний термінал з Mac і Windows.',
+                    ? Text('Спільний термінал з Mac і Windows.',
                         style: TextStyle(color: _muted))
                     : ListView(
                         children: [
@@ -167,42 +168,42 @@ class _AdminScreenState extends State<AdminScreen> {
                         ],
                       ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _input,
-                      style: const TextStyle(color: _text),
+                      style: TextStyle(color: _text),
                       cursorColor: _copper,
                       decoration: _field('Написати в спільний термінал…'),
                       onSubmitted: (_) => _send(),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _copperButton('Надіслати', _send),
                 ],
               ),
             ]),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _cardBox('АДРЕСА WINDOWS', [
-              const Text(
+              Text(
                 'Якщо телефон в іншій мережі, впиши адресу з адмінки Windows.',
                 style: TextStyle(color: _muted, fontSize: 12, height: 1.35),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _host,
-                      style: const TextStyle(color: _text),
+                      style: TextStyle(color: _text),
                       cursorColor: _copper,
                       decoration: _field('100.64.253.111'),
                       onSubmitted: _link.useHost,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _copperButton('Знайти', () => _link.useHost(_host.text)),
                 ],
               ),
@@ -215,26 +216,26 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _tailscaleAlert() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF102028),
+        color: Color(0xFF102028),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _copper),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('ПОТРІБЕН TAILSCALE',
+          Text('ПОТРІБЕН TAILSCALE',
               style: TextStyle(color: _copper, fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          const Text('Встановіть Tailscale на цей телефон',
+          SizedBox(height: 4),
+          Text('Встановіть Tailscale на цей телефон',
               style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Без нього пристрої в іншій мережі один одного не бачать.',
             style: TextStyle(color: _muted, height: 1.35),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _copperButton('Встановити Tailscale', () {
             launchUrl(
               Uri.parse('https://play.google.com/store/apps/details?id=com.tailscale.ipn'),
@@ -257,8 +258,8 @@ class _AdminScreenState extends State<AdminScreen> {
       title = 'Шукаю адмінку';
       sub = 'Windows має бути відкритий. Кабель не потрібен.';
     } else if (!Platform.isAndroid) {
-      title = 'Оновлення файлом — для Android';
-      sub = 'Цей телефон у мережі. Пакет ставиться на Android.';
+      title = 'iPhone оновлюється з Windows';
+      sub = 'Підключи iPhone кабелем до комп’ютера. З самого телефону пакет не ставиться.';
     } else if (scope == 'pc') {
       title = 'Оновлення тільки для комп’ютерів';
       sub = 'Телефон лишається як є.';
@@ -283,34 +284,34 @@ class _AdminScreenState extends State<AdminScreen> {
       sub = 'Усі комп’ютери і телефони в одній адмінці.';
     }
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF121A24),
+        color: Color(0xFF121A24),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: offer ? _copper : const Color(0xFF3A4632)),
+        border: Border.all(color: offer ? _copper : Color(0xFF3A4632)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('ОНОВЛЕННЯ',
+          Text('ОНОВЛЕННЯ',
               style: TextStyle(
                   color: _copper, fontSize: 11, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   color: _text, fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(sub, style: const TextStyle(color: _muted, height: 1.35)),
+          SizedBox(height: 4),
+          Text(sub, style: TextStyle(color: _muted, height: 1.35)),
           if (_downloading) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             LinearProgressIndicator(
               value: _progress == 0 ? null : _progress,
               color: _copper,
-              backgroundColor: const Color(0xFF2A3824),
+              backgroundColor: Color(0xFF2A3824),
             ),
           ],
           if (Platform.isAndroid) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: _copperButton(
@@ -370,7 +371,7 @@ class _AdminScreenState extends State<AdminScreen> {
         color: _copper,
         borderRadius: BorderRadius.circular(22),
       ),
-      child: const Text('W',
+      child: Text('W',
           style: TextStyle(
               color: Color(0xFF1A140C),
               fontSize: 26,
@@ -380,18 +381,18 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _pill(String text, bool live) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 132),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      constraints: BoxConstraints(maxWidth: 132),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: live ? _live : const Color(0xFF243024),
+        color: live ? _live : Color(0xFF243024),
         borderRadius: BorderRadius.circular(999),
-        border: live ? null : Border.all(color: const Color(0xFF3A4632)),
+        border: live ? null : Border.all(color: Color(0xFF3A4632)),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: live ? const Color(0xFF1A140C) : _text,
+          color: live ? Color(0xFF1A140C) : _text,
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),
@@ -402,11 +403,11 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget _cardBox(String title, List<Widget> children) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3A4632)),
+        border: Border.all(color: Color(0xFF3A4632)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,13 +420,13 @@ class _AdminScreenState extends State<AdminScreen> {
               borderRadius: BorderRadius.circular(1),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   color: Color(0xFFC6D36A),
                   fontSize: 12,
                   fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ...children,
         ],
       ),
@@ -444,28 +445,28 @@ class _AdminScreenState extends State<AdminScreen> {
     return _cardBox('ОГОЛОШЕННЯ', [
       Text(
         text.isEmpty ? 'Поки немає оголошення' : text,
-        style: const TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w800),
+        style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w800),
       ),
-      const SizedBox(height: 4),
+      SizedBox(height: 4),
       Text(
         text.isEmpty
             ? 'Окремо від термінала. Кнопка «Прочитав» на кожному пристрої.'
             : '${data['name'] ?? '—'} · ${data['t'] ?? ''} · ${names.isEmpty ? 'Ще ніхто не прочитав' : 'Прочитали: $names'}',
-        style: const TextStyle(color: _muted, height: 1.35),
+        style: TextStyle(color: _muted, height: 1.35),
       ),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       TextField(
         controller: _noticeInput,
-        style: const TextStyle(color: _text),
+        style: TextStyle(color: _text),
         cursorColor: _copper,
         decoration: _field('Коротке оголошення для всіх…'),
         onSubmitted: (_) => _sendNotice(),
       ),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       Row(
         children: [
           _copperButton('Оголосити', _sendNotice),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           _copperButton(reads.containsKey(_link.deviceId) ? 'Прочитано' : 'Прочитав',
               text.isEmpty || reads.containsKey(_link.deviceId) ? null : _link.markNoticeRead),
         ],
@@ -487,19 +488,19 @@ class _AdminScreenState extends State<AdminScreen> {
 
   List<Widget> _visits(Map<String, dynamic> state) {
     final raw = state['visits'];
-    final items = raw is List ? raw.whereType<Map>().toList() : const <Map>[];
+    final items = raw is List ? raw.whereType<Map>().toList() : <Map>[];
     if (items.isEmpty) {
-      return const [
+      return [
         Text('За тиждень нових заходжень ще немає.', style: TextStyle(color: _muted, height: 1.35)),
       ];
     }
     return [
       for (final item in items.take(12))
         Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: EdgeInsets.only(bottom: 6),
           child: Text(
             '${item['t'] ?? ''}  ${item['name'] ?? ''} · ${item['system'] ?? ''} · v${item['version'] ?? '—'}',
-            style: const TextStyle(color: _text, height: 1.3),
+            style: TextStyle(color: _text, height: 1.3),
           ),
         ),
     ];
@@ -514,11 +515,11 @@ class _AdminScreenState extends State<AdminScreen> {
             ? 'W'
             : 'T';
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2533),
+        color: Color(0xFF1C2533),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: online ? const Color(0xFF3A4632) : _border),
+        border: Border.all(color: online ? Color(0xFF3A4632) : _border),
       ),
       child: Row(
         children: [
@@ -526,11 +527,11 @@ class _AdminScreenState extends State<AdminScreen> {
             width: 5,
             height: 64,
             decoration: BoxDecoration(
-              color: online ? _live : const Color(0xFF3A4632),
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              color: online ? _live : Color(0xFF3A4632),
+              borderRadius: BorderRadius.horizontal(left: Radius.circular(16)),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Container(
             width: 40,
             height: 40,
@@ -540,29 +541,29 @@ class _AdminScreenState extends State<AdminScreen> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(letter,
-                style: const TextStyle(
+                style: TextStyle(
                     color: Color(0xFF1A140C),
                     fontWeight: FontWeight.w800,
                     fontSize: 16)),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${raw['name'] ?? '—'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: _text, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   '$system · ${raw['ip'] ?? ''} · v${raw['version'] ?? '—'}',
-                  style: const TextStyle(color: _muted, fontSize: 12),
+                  style: TextStyle(color: _muted, fontSize: 12),
                 ),
                 _freshLine(raw),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           _pill(online ? 'в мережі' : 'немає', online),
         ],
       ),
@@ -571,11 +572,11 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _freshLine(Map raw) {
     final text = _fresh(raw);
-    if (text.isEmpty) return const SizedBox.shrink();
+    if (text.isEmpty) return SizedBox.shrink();
     return Text(
       text,
       style: TextStyle(
-        color: text.contains('відстає') ? const Color(0xFFFF8F8F) : _live,
+        color: text.contains('відстає') ? Color(0xFFFF8F8F) : _live,
         fontSize: 12,
         fontWeight: FontWeight.w700,
       ),
@@ -615,17 +616,17 @@ class _AdminScreenState extends State<AdminScreen> {
             ? 'телефон'
             : 'ПК';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Text.rich(TextSpan(children: [
         TextSpan(
             text: 'v${raw['version'] ?? ''}  ',
-            style: const TextStyle(color: _copper, fontWeight: FontWeight.w800)),
+            style: TextStyle(color: _copper, fontWeight: FontWeight.w800)),
         TextSpan(
             text: '$tag  ',
-            style: const TextStyle(color: _muted, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: _muted, fontWeight: FontWeight.w700)),
         TextSpan(
             text: '${raw['text'] ?? ''}',
-            style: const TextStyle(color: _text, height: 1.3)),
+            style: TextStyle(color: _text, height: 1.3)),
       ])),
     );
   }
@@ -634,22 +635,22 @@ class _AdminScreenState extends State<AdminScreen> {
     final name = '${raw['name'] ?? ''}';
     final low = name.toLowerCase();
     Color color = _copper;
-    if (low.contains('mac')) color = const Color(0xFF8FB7D6);
+    if (low.contains('mac')) color = Color(0xFF8FB7D6);
     if (low.contains('тел') || low.contains('phone') || low.contains('iphone')) {
       color = _live;
     }
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: EdgeInsets.only(bottom: 4),
       child: Text.rich(TextSpan(children: [
         TextSpan(
             text: '${raw['t'] ?? ''}  ',
-            style: const TextStyle(color: Color(0xFF8E9884), fontSize: 12)),
+            style: TextStyle(color: Color(0xFF8E9884), fontSize: 12)),
         TextSpan(
             text: '$name  ',
             style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12)),
         TextSpan(
             text: '${raw['text'] ?? ''}',
-            style: const TextStyle(color: _text, fontSize: 12)),
+            style: TextStyle(color: _text, fontSize: 12)),
       ])),
     );
   }
@@ -657,21 +658,21 @@ class _AdminScreenState extends State<AdminScreen> {
   InputDecoration _field(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF8E9884)),
+      hintStyle: TextStyle(color: Color(0xFF8E9884)),
       filled: true,
-      fillColor: const Color(0xFF121810),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      fillColor: Color(0xFF121810),
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
+        borderSide: BorderSide(color: _border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
+        borderSide: BorderSide(color: _border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _copper),
+        borderSide: BorderSide(color: _copper),
       ),
     );
   }

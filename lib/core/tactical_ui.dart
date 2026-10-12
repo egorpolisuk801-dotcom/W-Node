@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'app_colors.dart';
 import 'camo_button.dart';
+import 'theme_controller.dart';
+import 'user_config.dart';
 
 class TacStyle {
   static const radius = 20.0;
@@ -58,25 +62,53 @@ class VolGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final id = UserConfig().themeId;
     final r = BorderRadius.circular(radius);
+    final glass = id == AppThemeId.glass;
+    final brutal = id == AppThemeId.brutal;
+    final neo = id == AppThemeId.neo;
     final plate = Container(
       margin: margin,
       decoration: BoxDecoration(
         borderRadius: r,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x66000000),
-            offset: Offset(0, 8),
-            blurRadius: 14,
-            spreadRadius: -6,
-          ),
-        ],
+        boxShadow: brutal
+            ? const [
+                BoxShadow(color: Color(0xFF111111), offset: Offset(5, 5)),
+              ]
+            : neo
+                ? const [
+                    BoxShadow(
+                      color: Color(0xFFF8FBFF),
+                      offset: Offset(-6, -6),
+                      blurRadius: 12,
+                    ),
+                    BoxShadow(
+                      color: Color(0xFFA3B1C6),
+                      offset: Offset(6, 6),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: glass
+                          ? const Color(0x221A2744)
+                          : (glow ?? AppColors.accent).withOpacity(0.35),
+                      offset: const Offset(0, 8),
+                      blurRadius: glass ? 18 : 16,
+                    ),
+                  ],
       ),
       child: ClipRRect(
         borderRadius: r,
-        child: CustomPaint(
-          painter: _WoodlandPanelPainter(radius: radius, glow: glow),
-          child: Padding(padding: padding, child: child),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: glass ? 16 : 0,
+            sigmaY: glass ? 16 : 0,
+          ),
+          child: CustomPaint(
+            painter: _StylePanelPainter(radius: radius, glow: glow),
+            child: Padding(padding: padding, child: child),
+          ),
         ),
       ),
     );
@@ -91,69 +123,62 @@ class VolGlass extends StatelessWidget {
   }
 }
 
-class _WoodlandPanelPainter extends CustomPainter {
+class _StylePanelPainter extends CustomPainter {
   final double radius;
   final Color? glow;
-  _WoodlandPanelPainter({required this.radius, this.glow});
+  _StylePanelPainter({required this.radius, this.glow});
 
   @override
   void paint(Canvas canvas, Size size) {
+    final id = UserConfig().themeId;
     final rect = Offset.zero & size;
     final r = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final light = !AppColors.isDark;
     canvas.save();
     canvas.clipRRect(r);
-    canvas.drawRect(
-      rect,
-      Paint()..color = light ? const Color(0xFFE7D8BE) : const Color(0xFF1A2216),
-    );
-    final blotches = light
-        ? const [
-            Color(0x668A7848),
-            Color(0x553E5330),
-            Color(0x66C4B48A),
-            Color(0x445A4632),
-          ]
-        : const [
-            Color(0x663E5428),
-            Color(0x55241C16),
-            Color(0x556A5430),
-            Color(0x444A3828),
-          ];
-    const spots = <List<double>>[
-      [0.15, 0.30, 0.9, 1.1],
-      [0.82, 0.22, 0.7, 0.9],
-      [0.55, 0.78, 1.0, 0.7],
-      [0.08, 0.82, 0.6, 0.5],
-    ];
-    for (var i = 0; i < spots.length; i++) {
-      final s = spots[i];
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width * s[0], size.height * s[1]),
-          width: size.width * s[2],
-          height: size.height * s[3],
-        ),
-        Paint()..color = blotches[i],
+    if (id == AppThemeId.glass) {
+      canvas.drawRect(rect, Paint()..color = const Color(0xB8FFFFFF));
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height * 0.45),
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x66FFFFFF), Color(0x00FFFFFF)],
+          ).createShader(rect),
+      );
+    } else if (id == AppThemeId.brutal) {
+      canvas.drawRect(rect, Paint()..color = const Color(0xFFFFFFFF));
+    } else if (id == AppThemeId.neo) {
+      canvas.drawRect(rect, Paint()..color = const Color(0xFFE4EAF3));
+    } else {
+      canvas.drawRect(rect, Paint()..color = const Color(0xFF12101A));
+      final neon = glow ?? const Color(0xFF00E5FF);
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height - 2, size.width, 2),
+        Paint()..color = neon,
       );
     }
-    final bar = (glow ?? const Color(0xFF7FA04A));
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height - 3, size.width, 3),
-      Paint()..color = bar,
-    );
     canvas.restore();
-    canvas.drawRRect(
-      r.deflate(0.6),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1
-        ..color = light ? const Color(0xFF8A7848) : const Color(0xFF3A4632),
-    );
+    final stroke = id == AppThemeId.brutal
+        ? const Color(0xFF111111)
+        : id == AppThemeId.cyber
+            ? (glow ?? const Color(0xFF00E5FF))
+            : id == AppThemeId.glass
+                ? const Color(0xEEFFFFFF)
+                : const Color(0x00000000);
+    if (id != AppThemeId.neo) {
+      canvas.drawRRect(
+        r.deflate(id == AppThemeId.brutal ? 1.5 : 0.6),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = id == AppThemeId.brutal ? 3 : 1.2
+          ..color = stroke,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _WoodlandPanelPainter old) =>
+  bool shouldRepaint(covariant _StylePanelPainter old) =>
       old.radius != radius || old.glow != glow;
 }
 
@@ -373,12 +398,12 @@ class TacChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 15, color: const Color(0xFFF4F0E4)),
+            Icon(icon, size: 15, color: styleInk(active ? CamoTone.olive : CamoTone.deep)),
             const SizedBox(width: 6),
           ],
           Text(label,
-              style: const TextStyle(
-                  color: Color(0xFFF4F0E4),
+              style: TextStyle(
+                  color: styleInk(active ? CamoTone.olive : CamoTone.deep),
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 0.2)),
@@ -545,17 +570,20 @@ class TacField {
           ? null
           : Icon(icon, color: AppColors.accent, size: 20),
       filled: true,
-      fillColor: AppColors.isDark
-          ? const Color(0xFF141C12)
-          : const Color(0xFFF3E6CC),
+      fillColor: AppColors.card,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF3A4632)),
+        borderRadius: BorderRadius.circular(
+            UserConfig().themeId == AppThemeId.brutal ? 4 : 16),
+        borderSide: BorderSide(
+          color: AppColors.border,
+          width: UserConfig().themeId == AppThemeId.brutal ? 3 : 1.2,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF7FA04A), width: 1.6),
+        borderRadius: BorderRadius.circular(
+            UserConfig().themeId == AppThemeId.brutal ? 4 : 16),
+        borderSide: BorderSide(color: AppColors.accent, width: 2),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),

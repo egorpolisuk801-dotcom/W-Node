@@ -82,11 +82,11 @@ class _MainShellState extends State<MainShell> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(on ? tab.$2 : tab.$1,
-                              color: const Color(0xFFF4F0E4), size: 20),
+                              color: styleInk(CamoTone.values[i]), size: 20),
                           const SizedBox(height: 3),
                           Text(tab.$3,
-                              style: const TextStyle(
-                                  color: Color(0xFFF4F0E4),
+                              style: TextStyle(
+                                  color: styleInk(CamoTone.values[i]),
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11)),
                         ],

@@ -56,22 +56,25 @@ class UserConfig {
     return pair.isEmpty ? const ['ООС', 'ППД'] : pair;
   }
 
-  bool get isDarkMode {
-    final id = themeId;
-    return id == 'corporate' || id == 'tactical';
-  }
+  bool get isDarkMode => themeId == 'cyber';
 
   String get themeId {
     final stored = _getValue('theme_id', '');
-    if (stored.isNotEmpty) return stored;
-    return _getValue('is_dark_mode', true) ? 'hud' : 'light';
+    const known = {'glass', 'brutal', 'neo', 'cyber'};
+    if (known.contains(stored)) return stored;
+    if (stored == 'light') return 'glass';
+    if (stored == 'corporate') return 'neo';
+    if (stored == 'tactical') return 'brutal';
+    if (stored == 'hud') return 'cyber';
+    return _getValue('is_dark_mode', true) ? 'cyber' : 'glass';
   }
 
   Future<void> setThemeId(String id) async {
     if (_prefs == null) await load();
-    await _prefs?.setString('theme_id', id);
-    await _prefs?.setBool(
-        'is_dark_mode', id == 'corporate' || id == 'tactical');
+    const known = {'glass', 'brutal', 'neo', 'cyber'};
+    final next = known.contains(id) ? id : 'cyber';
+    await _prefs?.setString('theme_id', next);
+    await _prefs?.setBool('is_dark_mode', next == 'cyber');
   }
 
   String get lastIssuePerson => _getValue('last_issue_person', '');

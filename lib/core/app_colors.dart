@@ -35,88 +35,88 @@ class _Palette {
 }
 
 class AppColors {
-  /// Поле — нічний лісовий камуфляж.
-  static const _hud = _Palette(
-    bg: Color(0xFF121610),
-    card: Color(0xFF1C2418),
-    text: Color(0xFFF3F0E6),
-    muted: Color(0xFFA8B09A),
-    accent: Color(0xFF9AAE62),
-    accentBlue: Color(0xFFC4B07A),
-    warning: Color(0xFFC4A06A),
-    danger: Color(0xFF8C5A48),
-    shadowTop: Color(0x33FFFFFF),
-    shadowBottom: Color(0x88000000),
-    onAccent: Color(0xFFF4F1E6),
-    goldDeep: Color(0xFF2A3324),
-    goldLight: Color(0x66D7C49A),
+  /// Скло — світлий глассморфізм.
+  static const _glass = _Palette(
+    bg: Color(0xFFD5E3F4),
+    card: Color(0xCCF7FBFF),
+    text: Color(0xFF17304A),
+    muted: Color(0xFF5E7590),
+    accent: Color(0xFF2F6BFF),
+    accentBlue: Color(0xFF7A5CFF),
+    warning: Color(0xFFE08A2A),
+    danger: Color(0xFFE15B6A),
+    shadowTop: Color(0xB3FFFFFF),
+    shadowBottom: Color(0x1A1A2744),
+    onAccent: Color(0xFFF7FBFF),
+    goldDeep: Color(0xFFB9CDE4),
+    goldLight: Color(0xE6FFFFFF),
   );
 
-  /// День — світлий хакі.
-  static const _light = _Palette(
-    bg: Color(0xFFE4D7C0),
-    card: Color(0xFFF3E8D4),
-    text: Color(0xFF241C14),
-    muted: Color(0xFF6E5E48),
-    accent: Color(0xFF3E5330),
-    accentBlue: Color(0xFF6A5438),
-    warning: Color(0xFF8A6230),
-    danger: Color(0xFF7A4038),
-    shadowTop: Color(0xFFFFF8EE),
-    shadowBottom: Color(0x33281810),
-    onAccent: Color(0xFFF7F1E6),
-    goldDeep: Color(0xFFC4B08A),
-    goldLight: Color(0xF2FFF8EC),
+  /// Бруталізм — світлий, чорна рамка.
+  static const _brutal = _Palette(
+    bg: Color(0xFFFFF4D8),
+    card: Color(0xFFFFFFFF),
+    text: Color(0xFF111111),
+    muted: Color(0xFF3A3A3A),
+    accent: Color(0xFFFFD000),
+    accentBlue: Color(0xFFFF4D6A),
+    warning: Color(0xFF111111),
+    danger: Color(0xFFFF3B30),
+    shadowTop: Color(0xFFFFFFFF),
+    shadowBottom: Color(0xFF111111),
+    onAccent: Color(0xFF111111),
+    goldDeep: Color(0xFF111111),
+    goldLight: Color(0xFFFFE14A),
   );
 
-  /// Олива — мох.
-  static const _corporate = _Palette(
-    bg: Color(0xFF141A12),
-    card: Color(0xFF1E281C),
-    text: Color(0xFFE8F0E4),
-    muted: Color(0xFF9AAB96),
-    accent: Color(0xFF8FA86A),
-    accentBlue: Color(0xFFC6B48A),
-    warning: Color(0xFFD2B48C),
-    danger: Color(0xFFC48A78),
-    shadowTop: Color(0x33FFFFFF),
-    shadowBottom: Color(0x88000000),
-    onAccent: Color(0xFFF4F1E6),
-    goldDeep: Color(0xFF24301E),
-    goldLight: Color(0x66C5D4B0),
+  /// Неоморфізм — м’який світлий рельєф.
+  static const _neo = _Palette(
+    bg: Color(0xFFE4EAF3),
+    card: Color(0xFFE4EAF3),
+    text: Color(0xFF2C3644),
+    muted: Color(0xFF7B8798),
+    accent: Color(0xFF8B97AB),
+    accentBlue: Color(0xFF9AA6BA),
+    warning: Color(0xFFC4A574),
+    danger: Color(0xFFC47A7A),
+    shadowTop: Color(0xFFF8FBFF),
+    shadowBottom: Color(0xFFA3B1C6),
+    onAccent: Color(0xFFF7F9FC),
+    goldDeep: Color(0xFFC5D0E0),
+    goldLight: Color(0xFFF4F7FB),
   );
 
-  /// Ніч — майже чорний ліс.
-  static const _tactical = _Palette(
-    bg: Color(0xFF0C100E),
-    card: Color(0xFF161C14),
-    text: Color(0xFFF2F0E8),
-    muted: Color(0xFF8E9888),
-    accent: Color(0xFF7E9458),
-    accentBlue: Color(0xFFB7A078),
-    warning: Color(0xFFC4A06A),
-    danger: Color(0xFFA87858),
-    shadowTop: Color(0x22FFFFFF),
-    shadowBottom: Color(0x99000000),
-    onAccent: Color(0xFFF4F1E6),
-    goldDeep: Color(0xFF1C2418),
-    goldLight: Color(0x55C4B48A),
+  /// Кіберпанк — темний неон.
+  static const _cyber = _Palette(
+    bg: Color(0xFF07060D),
+    card: Color(0xFF12101A),
+    text: Color(0xFFE7F6FF),
+    muted: Color(0xFF7E8CA6),
+    accent: Color(0xFF00E5FF),
+    accentBlue: Color(0xFFFF2BD6),
+    warning: Color(0xFFFFE14A),
+    danger: Color(0xFFFF3355),
+    shadowTop: Color(0x6600E5FF),
+    shadowBottom: Color(0xCC000000),
+    onAccent: Color(0xFF041016),
+    goldDeep: Color(0xFF1A1030),
+    goldLight: Color(0x66FF2BD6),
   );
 
   static _Palette get _p {
     switch (UserConfig().themeId) {
-      case AppThemeId.light:
-        return _light;
-      case AppThemeId.corporate:
-        return _corporate;
-      case AppThemeId.tactical:
-        return _tactical;
+      case AppThemeId.glass:
+        return _glass;
+      case AppThemeId.brutal:
+        return _brutal;
+      case AppThemeId.neo:
+        return _neo;
       default:
-        return _hud;
+        return _cyber;
     }
   }
 
-  static bool get isDark => UserConfig().themeId != AppThemeId.light;
+  static bool get isDark => UserConfig().themeId == AppThemeId.cyber;
 
   static Color get bg => _p.bg;
   static Color get card => _p.card;
@@ -144,32 +144,42 @@ class AppColors {
 
   static List<Color> get scene {
     switch (UserConfig().themeId) {
-      case AppThemeId.light:
-        return const [Color(0xFFF3E6CC), Color(0xFFE4D3B4), Color(0xFFCDB892)];
-      case AppThemeId.corporate:
-        return const [Color(0xFF24301C), Color(0xFF141C12), Color(0xFF0C120C)];
-      case AppThemeId.tactical:
-        return const [Color(0xFF161C14), Color(0xFF0C100E), Color(0xFF070A08)];
+      case AppThemeId.glass:
+        return const [Color(0xFFEAF3FC), Color(0xFFD5E3F4), Color(0xFFC5D6EE)];
+      case AppThemeId.brutal:
+        return const [Color(0xFFFFF8E8), Color(0xFFFFF4D8), Color(0xFFFFE7A8)];
+      case AppThemeId.neo:
+        return const [Color(0xFFF2F5FA), Color(0xFFE4EAF3), Color(0xFFD5DEEA)];
       default:
-        return const [Color(0xFF24301C), Color(0xFF141A12), Color(0xFF0C100C)];
+        return const [Color(0xFF120818), Color(0xFF07060D), Color(0xFF030208)];
     }
   }
 
   static Color get glassTint {
     switch (UserConfig().themeId) {
-      case AppThemeId.light:
-        return const Color(0xFFF6E7CF);
-      case AppThemeId.corporate:
-        return const Color(0xFFC5D4B0);
-      case AppThemeId.tactical:
-        return const Color(0xFFC4B48A);
+      case AppThemeId.glass:
+        return const Color(0xFFF7FBFF);
+      case AppThemeId.brutal:
+        return const Color(0xFFFFFFFF);
+      case AppThemeId.neo:
+        return const Color(0xFFE4EAF3);
       default:
-        return const Color(0xFFD5C49A);
+        return const Color(0xFF00E5FF);
     }
   }
 
-  static Color get border =>
-      (isDark ? glassTint : Colors.white).withOpacity(isDark ? 0.22 : 0.72);
+  static Color get border {
+    switch (UserConfig().themeId) {
+      case AppThemeId.brutal:
+        return const Color(0xFF111111);
+      case AppThemeId.neo:
+        return const Color(0x00000000);
+      case AppThemeId.cyber:
+        return const Color(0xFF00E5FF);
+      default:
+        return const Color(0xCCFFFFFF);
+    }
+  }
 
   static LinearGradient get metal => LinearGradient(
         begin: Alignment.topLeft,
@@ -199,14 +209,10 @@ class AppColors {
       ];
 
   static BoxDecoration cardDeco({Color? borderColor, double radius = 22}) {
-    final light = !isDark;
     return BoxDecoration(
-      color: light ? const Color(0xFFE7D8BE) : const Color(0xFF1A2216),
+      color: AppColors.card,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(
-          color: borderColor ??
-              (light ? const Color(0xFF8A7848) : const Color(0xFF3A4632)),
-          width: 1.1),
+      border: Border.all(color: borderColor ?? AppColors.border, width: 1.1),
       boxShadow: const [
         BoxShadow(
           color: Color(0x66000000),

@@ -227,7 +227,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Widget _tile(IconData icon, CamoTone tone, String title, String subtitle,
       VoidCallback onTap) {
-    const ink = Color(0xFFF4F0E4);
+    final ink = styleInk(tone);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: CamoPlate(
@@ -243,7 +243,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: ink,
                           fontWeight: FontWeight.w800,
                           fontSize: 15)),
@@ -256,7 +256,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: ink),
+            Icon(Icons.chevron_right_rounded, color: ink),
           ],
         ),
       ),

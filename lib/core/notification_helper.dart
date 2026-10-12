@@ -42,7 +42,7 @@ class NotificationHelper {
         AndroidNotificationDetails(
       'wnode_sync_channel', // ID канала
       'Синхронизация склада', // Имя канала в настройках
-      channelDescription: 'Уведомления о фоновой синхронизации данных',
+      channelDescription: 'Сповіщення про фонову синхронізацію',
       importance: Importance.max,
       priority: Priority.high,
       color: Color(0xFF8FA86A),

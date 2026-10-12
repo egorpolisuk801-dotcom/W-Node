@@ -2,50 +2,69 @@ import 'package:flutter/foundation.dart';
 import 'user_config.dart';
 
 class AppThemeId {
-  static const hud = 'hud';
-  static const light = 'light';
-  static const corporate = 'corporate';
-  static const tactical = 'tactical';
+  static const glass = 'glass';
+  static const brutal = 'brutal';
+  static const neo = 'neo';
+  static const cyber = 'cyber';
 
-  static const all = [hud, light, corporate, tactical];
+  static const all = [glass, brutal, neo, cyber];
+
+  static String canonical(String id) {
+    switch (id) {
+      case glass:
+      case brutal:
+      case neo:
+      case cyber:
+        return id;
+      case 'light':
+        return glass;
+      case 'corporate':
+        return neo;
+      case 'tactical':
+        return brutal;
+      default:
+        return cyber;
+    }
+  }
 
   static String title(String id) {
-    switch (id) {
-      case light:
-        return 'День';
-      case corporate:
-        return 'Олива';
-      case tactical:
-        return 'Ніч';
+    switch (canonical(id)) {
+      case glass:
+        return 'Скло';
+      case brutal:
+        return 'Бруталізм';
+      case neo:
+        return 'Нео';
       default:
-        return 'Поле';
+        return 'Кібер';
     }
   }
 
   static String hint(String id) {
-    switch (id) {
-      case light:
-        return 'Світлий хакі';
-      case corporate:
-        return 'Мох';
-      case tactical:
-        return 'Нічний ліс';
+    switch (canonical(id)) {
+      case glass:
+        return 'Глассморфізм, світла';
+      case brutal:
+        return 'Необруталізм, світла';
+      case neo:
+        return 'Неоморфізм, світла';
       default:
-        return 'Лісовий камуфляж';
+        return 'Темний кіберпанк';
     }
   }
 }
 
 class ThemeController {
   static final ValueNotifier<String> theme =
-      ValueNotifier<String>(AppThemeId.hud);
+      ValueNotifier<String>(AppThemeId.cyber);
 
   static void set(String id) {
-    theme.value = id;
-    UserConfig().setThemeId(id);
+    final next = AppThemeId.canonical(id);
+    theme.value = next;
+    UserConfig().setThemeId(next);
   }
 
   static void loadFromConfig() {
-    theme.value = UserConfig().themeId;
+    theme.value = AppThemeId.canonical(UserConfig().themeId);
   }
 }

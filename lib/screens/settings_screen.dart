@@ -24,7 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Стан
   bool _isDark = true;
-  String _themeId = AppThemeId.hud;
+  String _themeId = AppThemeId.cyber;
   bool _isLoading = false;
   bool _showPassword = false;
 
@@ -135,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dbname: _dbNameCtrl.text.trim(),
       w1: jsonEncode(_warehouses),
       w2: "",
-      darkMode: _themeId != AppThemeId.light,
+      darkMode: _themeId == AppThemeId.cyber,
       iDig: _iDig,
       iLet: _iLet,
       iShoe: _iShoe,
@@ -229,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             _neuField(_hostCtrl, "Host (Адреса)", icon: Icons.cloud),
             const SizedBox(height: 15),
-            _neuField(_dbNameCtrl, "Database (Назва БД)", icon: Icons.storage),
+            _neuField(_dbNameCtrl, "Назва бази", icon: Icons.storage),
             const SizedBox(height: 15),
             _neuField(_userCtrl, "User (Користувач)", icon: Icons.person),
             const SizedBox(height: 15),
@@ -575,7 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () {
               setState(() {
                 _themeId = id;
-                _isDark = id != AppThemeId.light;
+                _isDark = id == AppThemeId.cyber;
               });
               ThemeController.set(id);
             },
@@ -584,13 +584,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(children: [
                   Icon(
-                    id == AppThemeId.light
-                        ? Icons.wb_sunny_outlined
-                        : (id == AppThemeId.tactical
-                            ? Icons.nights_stay_rounded
-                            : (id == AppThemeId.corporate
-                                ? Icons.park_outlined
-                                : Icons.blur_on_rounded)),
+                    id == AppThemeId.glass
+                        ? Icons.blur_on_rounded
+                        : (id == AppThemeId.brutal
+                            ? Icons.crop_square_rounded
+                            : (id == AppThemeId.neo
+                                ? Icons.lens_blur_rounded
+                                : Icons.bolt_rounded)),
                     color: selected ? AppColors.accent : AppColors.muted,
                     size: 18,
                   ),
