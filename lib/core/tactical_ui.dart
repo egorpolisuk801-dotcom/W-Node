@@ -218,59 +218,8 @@ class _TacBackdropState extends State<TacBackdrop>
         return Stack(
           children: [
             Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: AppColors.scene,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: -120 + 28 * t,
-              right: -80 + 18 * t,
-              child: IgnorePointer(
-                child: Container(
-                  width: 280,
-                  height: 280,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFF3E5428).withOpacity(0.55),
-                        const Color(0x00000000),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 40 - 20 * t,
-              left: -90,
-              child: IgnorePointer(
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.accent.withOpacity(0.10),
-                        AppColors.accent.withOpacity(0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: _PixelTintPainter(t),
-                ),
+              child: CustomPaint(
+                painter: _ThemeWashPainter(t),
               ),
             ),
             child!,
@@ -618,48 +567,89 @@ class TacSheet {
       );
 }
 
-class _PixelTintPainter extends CustomPainter {
+class _ThemeWashPainter extends CustomPainter {
   final double t;
-  _PixelTintPainter(this.t);
+  _ThemeWashPainter(this.t);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final ink = Paint()
-      ..color = AppColors.isDark
-          ? const Color(0x187FA04A)
-          : const Color(0x184A3820);
-    final shade = Paint()
-      ..color = AppColors.isDark
-          ? const Color(0x14A87848)
-          : const Color(0x123E5428);
-    const step = 18.0;
-    final shift = (t * step);
-    for (double y = -step; y < size.height + step; y += step) {
-      for (double x = -step; x < size.width + step; x += step) {
-        final gx = x + shift;
-        final gy = y;
-        final n = ((x / step).floor() * 3 + (y / step).floor() * 7) % 6;
-        if (n == 0) {
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(gx, gy, 8, 8),
-              const Radius.circular(2),
-            ),
-            ink,
-          );
-        } else if (n == 3) {
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(gx + 5, gy + 5, 6, 6),
-              const Radius.circular(2),
-            ),
-            shade,
-          );
-        }
-      }
+    final id = UserConfig().themeId;
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: AppColors.scene,
+        ).createShader(rect),
+    );
+    if (id == AppThemeId.brutal) {
+      canvas.drawRect(
+        Rect.fromLTWH(-16, size.height * 0.06, 72, 72),
+        Paint()..color = const Color(0xFFFFE14A),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(-10, size.height * 0.06 + 6, 72, 72),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..color = const Color(0xFF111111),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(size.width - 54, size.height * 0.78, 86, 22),
+        Paint()..color = const Color(0xFF111111),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(size.width - 96, 28, 64, 64),
+        Paint()..color = const Color(0xFFFF7AD9),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(size.width - 88, 36, 64, 64),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..color = const Color(0xFF111111),
+      );
+      return;
     }
+    if (id == AppThemeId.neo) {
+      _orb(canvas, Offset(size.width * 0.82, 70 + 12 * t), 170,
+          const Color(0x55FFFFFF));
+      _orb(canvas, Offset(20, size.height * 0.82), 190,
+          const Color(0x33A3B1C6));
+      return;
+    }
+    if (id == AppThemeId.cyber) {
+      final line = Paint()
+        ..color = const Color(0x2A00E5FF)
+        ..strokeWidth = 1;
+      for (var i = 0; i < 5; i++) {
+        final y = size.height * (0.16 + i * 0.16) + t * 10;
+        canvas.drawLine(Offset(0, y), Offset(size.width, y - 28), line);
+      }
+      _orb(canvas, Offset(size.width * 0.78, size.height * 0.18), 130,
+          const Color(0x5500E5FF));
+      _orb(canvas, Offset(16, size.height * 0.74), 110, const Color(0x44FF2BD6));
+      return;
+    }
+    _orb(canvas, Offset(size.width * 0.78 + 12 * t, 10), 210,
+        const Color(0x99FFFFFF));
+    _orb(canvas, Offset(-10, size.height * 0.7), 190,
+        AppColors.accent.withOpacity(0.22));
+  }
+
+  void _orb(Canvas canvas, Offset center, double radius, Color color) {
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [color, color.withOpacity(0)],
+        ).createShader(Rect.fromCircle(center: center, radius: radius)),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _PixelTintPainter old) => old.t != t;
+  bool shouldRepaint(covariant _ThemeWashPainter old) => old.t != t;
 }
