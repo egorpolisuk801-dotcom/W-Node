@@ -4,6 +4,7 @@ import '../core/app_colors.dart';
 import '../core/camo_button.dart';
 import '../core/tactical_ui.dart';
 import '../core/fun_moments.dart';
+import '../services/admin_link.dart';
 import 'settings_screen.dart';
 import 'season_settings_screen.dart';
 import 'norms_settings_screen.dart';
@@ -12,7 +13,6 @@ import 'scan_screen.dart';
 import 'kit_issue_screen.dart';
 import 'transfer_pick_screen.dart';
 import 'official_norms_screen.dart';
-import 'admin_screen.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -27,10 +27,23 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
+    AdminLink.instance.addListener(_onAdmin);
     PackageInfo.fromPlatform().then((info) {
       if (mounted) setState(() => _version = 'v${info.version}');
     });
   }
+
+  @override
+  void dispose() {
+    AdminLink.instance.removeListener(_onAdmin);
+    super.dispose();
+  }
+
+  void _onAdmin() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _hasUpdate => AdminLink.instance.phoneUpdateNotice;
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +60,38 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             const SizedBox(height: 22),
             _tile(
-              Icons.hub_rounded,
-              CamoTone.olive,
-              'Адмін',
-              'Mac, Windows і цей телефон: зв’язок і оновлення без кабелю',
+              Icons.analytics_rounded,
+              CamoTone.khaki,
+              'Аналіз комплектів',
+              'Скільки осіб можна одягнути зараз',
+              () => _openCalcPicker(),
+            ),
+            if (_hasUpdate)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TacCard(
+                  accent: AppColors.warning,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen())),
+                  child: Text(
+                    'Є оновлення програми. Воно в налаштуваннях.',
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            _tile(
+              Icons.settings_rounded,
+              CamoTone.brown,
+              'Налаштування',
+              _hasUpdate
+                  ? 'Є оновлення. Сервер, склади, тема, зв’язок'
+                  : 'Сервер, склади, тема і оновлення',
               () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const AdminScreen())),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen())),
             ),
             _tile(
               Icons.qr_code_scanner_rounded,

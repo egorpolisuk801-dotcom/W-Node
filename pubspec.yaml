@@ -1,7 +1,7 @@
 name: w_node
 description: Warehouse Inventory Application
 publish_to: 'none'
-version: 1.9.4+33
+version: 1.9.5+34
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

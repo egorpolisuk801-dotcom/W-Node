@@ -302,6 +302,58 @@ class AdminLink extends ChangeNotifier {
     );
   }
 
+  bool _newerThanInstalled(String remote, String build) {
+    if (remote.isEmpty || remote == '—') return false;
+    final local = versionLabel.split('+').first;
+    final remoteParts = remote
+        .split('+')
+        .first
+        .split('.')
+        .map((part) => int.tryParse(part) ?? 0)
+        .toList();
+    final localParts = local
+        .split('.')
+        .map((part) => int.tryParse(part) ?? 0)
+        .toList();
+    final count = remoteParts.length > localParts.length
+        ? remoteParts.length
+        : localParts.length;
+    for (var i = 0; i < count; i++) {
+      final left = i < remoteParts.length ? remoteParts[i] : 0;
+      final right = i < localParts.length ? localParts[i] : 0;
+      if (left > right) return true;
+      if (left < right) return false;
+    }
+    final remoteBuild = int.tryParse(build) ?? 0;
+    final localBuild = versionLabel.contains('+')
+        ? int.tryParse(versionLabel.split('+').last) ?? 0
+        : 0;
+    if (remoteBuild == 0 || localBuild == 0) return false;
+    return remoteBuild > localBuild;
+  }
+
+  bool get phoneUpdateNotice {
+    final cloudScope = cloudRelease['scope'];
+    final chunks = cloudRelease['phone_chunks'];
+    if ((cloudScope == 'all' || cloudScope == 'phone') &&
+        cloudRelease['has_phone'] == true &&
+        chunks is int &&
+        chunks > 0 &&
+        _newerThanInstalled(
+          '${cloudRelease['phone_version'] ?? ''}',
+          '${cloudRelease['phone_build'] ?? ''}',
+        )) {
+      return true;
+    }
+    final scope = state['release_scope'];
+    if (scope != 'all' && scope != 'phone') return false;
+    if (state['phone_apk_ready'] != true) return false;
+    return _newerThanInstalled(
+      (state['phone_version'] ?? '').toString(),
+      (state['phone_build'] ?? '').toString(),
+    );
+  }
+
   Future<void> pullCloud() async {
     final raw = await _cloudValue('w12_release');
     if (raw.isEmpty) return;

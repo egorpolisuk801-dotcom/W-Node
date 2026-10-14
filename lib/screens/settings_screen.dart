@@ -5,7 +5,9 @@ import '../core/app_colors.dart';
 import '../core/user_config.dart';
 import '../core/theme_controller.dart';
 import '../core/tactical_ui.dart';
+import '../services/admin_link.dart';
 import '../services/db_service.dart';
+import 'admin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -51,11 +53,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    AdminLink.instance.addListener(_onAdmin);
     _loadSettings();
+  }
+
+  void _onAdmin() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    AdminLink.instance.removeListener(_onAdmin);
     _hostCtrl.dispose();
     _userCtrl.dispose();
     _passCtrl.dispose();
@@ -426,6 +434,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (AdminLink.instance.phoneUpdateNotice)
+                TacCard(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  accent: AppColors.warning,
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AdminScreen())),
+                  child: Text(
+                    'Є оновлення програми. Воно в розділі «Зв’язок і оновлення».',
+                    style: TextStyle(
+                        color: AppColors.textMain,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ),
+              _menuTile(
+                title: "Зв’язок і оновлення",
+                subtitle: AdminLink.instance.phoneUpdateNotice
+                    ? "Є нова версія"
+                    : "Комп’ютери і телефони в одній мережі",
+                icon: Icons.hub_rounded,
+                color: AppColors.accent,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const AdminScreen())),
+              ),
               _menuTile(
                 title: "Сервер (Supabase)",
                 subtitle: _hostCtrl.text.isNotEmpty
